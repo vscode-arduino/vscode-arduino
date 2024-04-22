@@ -15,7 +15,7 @@
     "url": "https://github.com/vscode-arduino/vscode-arduino.git"
   },
   "bugs": {
-    "url": "https://github.com/vscode-arduino/vscode-arduinoissues"
+    "url": "https://github.com/vscode-arduino/vscode-arduino/issues"
   },
   "homepage": "https://github.com/vscode-arduino/vscode-arduino",
   "categories": [
