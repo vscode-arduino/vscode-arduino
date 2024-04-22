@@ -42,11 +42,11 @@ Arduino IDE can be installed from the Arduino [download page](https://www.arduin
 - *Note:* Arduino IDE `2.X.Y` is not supported and there are no plans for support in the future ([issue 1477](https://github.com/microsoft/vscode-arduino/issues/1477)).
 
 ## Installation
-Open VS Code and press <kbd>F1</kbd> or <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> *or* <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> to open command palette, select **Install Extension** and type `vscode-arduino`.
+Open VS Code and press <kbd>F1</kbd> or <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> *or* <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> to open command palette, select **Install Extension** and type `vscode-arduino-community`.
 
 Or launch VS Code Quick Open (<kbd>Ctrl</kbd> + <kbd>P</kbd> *or* <kbd>Cmd</kbd> + <kbd>P</kbd> ), paste the following command, and press enter.
 ```bash
-ext install vscode-arduino
+ext install vscode-arduino-community
 ```
 
 You can also install directly from the Marketplace within Visual Studio Code, searching for `Arduino`.
@@ -211,7 +211,7 @@ Currently this extension supports the following operating systems:
   - The extension might work on other Linux distributions, as reported by other users, but without guarantee.
 
 ## Support
-You can find the full list of issues on the [Issue Tracker](https://github.com/Microsoft/vscode-arduino/issues). You can submit a [bug or feature suggestion](https://github.com/Microsoft/vscode-arduino/issues/new), and participate in community driven [discussions](https://gitter.im/Microsoft/vscode-arduino).
+You can find the full list of issues on the [Issue Tracker](https://github.com/vscode-arduino/vscode-arduino/issues). You can submit a [bug or feature suggestion](https://github.com/vscode-arduino/vscode-arduino/issues/new).
 
 ## Development
 
@@ -222,7 +222,7 @@ Installation prerequisites:
 - [Npm](https://www.npmjs.com/) (>= 6.x)
 
 To *run and develop*, do the following:
-- `git clone https://github.com/microsoft/vscode-arduino`
+- `git clone https://github.com/vscode-arduino/vscode-arduino`
 - `cd vscode-arduino`
 - Run `npm i`
 - Run `npm i -g gulp`
@@ -238,7 +238,7 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 The [Microsoft Enterprise and Developer Privacy Statement](https://www.microsoft.com/en-us/privacystatement/EnterpriseDev/default.aspx) describes the privacy statement of this software.
 
 ## License
-This extension is licensed under the [MIT License](https://github.com/Microsoft/vscode-arduino/blob/main/LICENSE.txt). Please see the [Third Party Notice](https://github.com/Microsoft/vscode-arduino/blob/main/ThirdPartyNotices.txt) file for additional copyright notices and terms.
+This extension is licensed under the [MIT License](https://github.com/vscode-arduino/vscode-arduino/blob/main/LICENSE.txt). Please see the [Third Party Notice](https://github.com/vscode-arduino/vscode-arduino/blob/main/ThirdPartyNotices.txt) file for additional copyright notices and terms.
 
 ## Contact Us
 TBD
