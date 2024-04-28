@@ -1,6 +1,25 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## Version 0.6.2
+
+- Release date: TBD
+
+### Added
+
+TBD
+
+### Changed
+
+- Removed publications of Prerelease versions
+
+### Fixed
+
+- A bug where on Mac systems, the extension ignores user specified arduino CLI path.
+
+## Version 0.6.1
+We don't talk on versio 0.6.1
+
 ## Version 0.6.0
 
 - Release date: March 15, 2023
