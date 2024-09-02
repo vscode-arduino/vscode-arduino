@@ -1,4 +1,8 @@
-# Visual Studio Code extension for Arduino
+# Visual Studio Code extension for Arduino (deprecated)
+
+> ⚠️ **Warning** ⚠️
+>
+> # This extension is deprecated and no longer maintained. We recommend existing customers to use the [Arduino IDE software](https://www.arduino.cc/en/software).
 
 > NOTE:
 > This is a community maintained fork of [Microsoft's vscode arduino extension](https://github.com/microsoft/vscode-arduino)
