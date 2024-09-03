@@ -14,7 +14,7 @@ updates:
     labels:
      - "dependencies"
      - "npm"
-    milestone: "Stabilizing the repo"
+    milestone: 1
     open-pull-requests-limit: 5
     pull-request-branch-name:
       separator: "-"
