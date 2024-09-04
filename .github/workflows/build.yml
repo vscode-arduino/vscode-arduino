@@ -83,7 +83,7 @@ jobs:
         run: |
             export NODE_OPTIONS="--openssl-legacy-provider --no-experimental-fetch"
             node build/package.js
-      - name: Build and pack extension
+      - name: Build and pack extension (windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
             $env:NODE_OPTIONS="--openssl-legacy-provider --no-experimental-fetch"
