@@ -1,22 +1,31 @@
-# get python version 3.8
-FROM python:3.8.19-bookworm
-# get nodejs version 20 in debian flavor
-FROM node:20.17-bookworm
+FROM ubuntu:23.10
 
-
-SHELL ["/bin/bash", "-c"]
+# # set timezone ?
+RUN ln -snf /usr/share/zoneinfo/Etc/Universal /etc/localtime 
 
 # install utility packages
 RUN apt update
-RUN apt install -y openssh-server openssh-sftp-server bash sudo zsh net-tools vim git 
+RUN apt install -y openssh-server openssh-sftp-server bash sudo zsh net-tools vim git python3.11 curl wget
+SHELL ["/bin/bash", "-c"]
+
+# install node js
+ENV NVM_DIR=/usr/local/nvm
+ENV NODE_VERSION=18.20.4
+RUN mkdir -p $NVM_DIR && export NVM_DIR=$NVM_DIR && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash 
+RUN source $NVM_DIR/nvm.sh \
+    && nvm install $NODE_VERSION \
+    && nvm alias default $NODE_VERSION \
+    && nvm use default
+ENV NODE_PATH=$NVM_DIR/v$NODE_VERSION/lib/node_modules
+ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+
+
 # install project tool dependancies
-# RUN ls /usr/local/lib/node_modules/npm 1>&2 && exit 1
 RUN npm install -g gulp node-gyp @vscode/vsce
-RUN apt install -y g++-multilib build-essential libudev-dev
+RUN apt install -y g++-multilib build-essential libudev-dev unzip
 
 # SSHD configuration
 EXPOSE 22/tcp
-RUN mkdir /run/sshd
 RUN mkdir -p /var/run/sshd
 
 
@@ -24,8 +33,7 @@ RUN mkdir -p /var/run/sshd
 VOLUME ["/host_dir"]
 
 # User configuration
-RUN adduser --shell /bin/bash --home /home/ubuntu ubuntu
-RUN usermod -aG sudo ubuntu
+RUN usermod --shell /bin/bash -aG sudo ubuntu
 WORKDIR /home/ubuntu
 USER ubuntu:ubuntu
 
@@ -46,8 +54,16 @@ USER ubuntu:ubuntu
 
 # install npm dependencies
 WORKDIR /vscode-arduino
-RUN env CXX="g++" CC="gcc" 
+ENV CXX="g++" 
+ENV CC="gcc" 
+RUN npm install
 
-USER root:root
 WORKDIR /home/ubuntu
-ENTRYPOINT ["/bin/zsh", "-c", "/usr/sbin/sshd && su ubuntu"]
+USER root:root
+RUN cat ~/.bashrc >> .bashrc
+RUN echo "export NODE_PATH=$NVM_DIR/v$NODE_VERSION/lib/node_modules" >> .bashrc
+RUN echo "export PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH" >> .bashrc
+RUN echo "export NODE_OPTIONS=\"--openssl-legacy-provider --no-experimental-fetch\"" >> .bashrc
+RUN echo "source $NVM_DIR/nvm.sh" >> .bashrc
+RUN cat .bashrc >> .zshrc
+ENTRYPOINT ["/bin/bash", "-c", "/usr/sbin/sshd && su ubuntu"]
