@@ -231,6 +231,9 @@ To *run and develop*, do the following:
 
 To *test*, press <kbd>F5</kbd> in VS Code with the "Launch Tests" debug configuration.
 
+You can also use `docker buid -t vscode-arduino:0.7.1 .` in order to create a container to compile the codebase
+Then you can run `docker run --name vscode_arduino_builder -it -v <some local folder>:/host_dir vscode-arduino:0.7.1`
+
 ## Code of Conduct
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct). For more information please see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/#howadopt) or contact opencode@microsoft.com with any additional questions or comments.
 
