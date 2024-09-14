@@ -19,6 +19,8 @@ vendor/**
 azure-pipelines.yml
 build/**
 assets/platform/**
+.dockerignore
+Dockerfile
 
 # A platform-specific directory in assets/platform/ will be added to the end of
 # this file by the packaging script.

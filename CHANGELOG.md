@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## Version 0.7.1
+
+ - Removed Microsoft's deprecation warnings
+ - Fixed a bug that local Arduino Cli installation cannot be found on macos
+ - Added `ARDUINO_DIRECTORIES_DATA` env variable to define package directory
+ - Added docker build file for creating build environment for this extension
+
 ## Version 0.6.0
 
 - Release date: March 15, 2023

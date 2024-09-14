@@ -28,20 +28,7 @@ import * as Logger from "./logger/logger";
 import { SerialMonitor } from "./serialmonitor/serialMonitor";
 const usbDetectorModule = impor("./serialmonitor/usbDetector") as typeof import ("./serialmonitor/usbDetector");
 
-export function showDeprecatedPopup(): void {
-    vscode.window.
-        showWarningMessage(
-            "The Arduino extension is deprecated. Please view our README for more information.",
-            "View README",
-        ).then((selection) => {
-        if (selection === "View README") {
-            vscode.commands.executeCommand("vscode.open", vscode.Uri.parse("https://aka.ms/arduinoextensionreadme"));
-        }
-    });
-}
-
 export async function activate(context: vscode.ExtensionContext) {
-    showDeprecatedPopup();
     Logger.configure(context);
     arduinoActivatorModule.default.context = context;
     const activeGuid = uuidModule().replace(/-/g, "");
@@ -63,7 +50,6 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(deviceContext);
 
     const commandExecution = async (command: string, commandBody: (...args: any[]) => any, args: any, getUserData?: () => any) => {
-        showDeprecatedPopup();
         const guid = uuidModule().replace(/-/g, "");
         Logger.traceUserData(`start-command-` + command, { correlationId: guid });
         const timer1 = new Logger.Timer();

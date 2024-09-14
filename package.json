@@ -2,7 +2,7 @@
   "name": "vscode-arduino-community",
   "displayName": "Arduino Community Edition",
   "description": "Arduino for Visual Studio Code",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "publisher": "vscode-arduino",
   "preview": true,
   "engines": {
