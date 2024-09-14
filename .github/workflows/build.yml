@@ -89,7 +89,7 @@ jobs:
             $env:NODE_OPTIONS="--openssl-legacy-provider --no-experimental-fetch"
             node build/package.js
       - name: Publish extension VSIX as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: VS Code extension VSIXes (${{ matrix.os }})
           path: out/vsix
