@@ -14,6 +14,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       BUILD_FLAGS: '--pre-release'
+      os: '["ubuntu-latest"]'
 
   upload:
     needs: call-build
