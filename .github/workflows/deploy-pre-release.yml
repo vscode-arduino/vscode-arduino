@@ -11,7 +11,7 @@ on:
 
 jobs:
   call-build:
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/template/build.yml
     with:
       BUILD_FLAGS: '--pre-release'
       os: '["ubuntu-latest"]'
@@ -32,12 +32,15 @@ jobs:
 
       - name: install vsce
         run: npm install --global vsce
+
+      - name: vsce login
+        run: echo ${{ secrets.VSCE_PASSWORD }} | vsce login ${{ secrets.VSCE_USER }}
+
+      - name: publish extension
+        run: vsce publish --pre-release  --packagePath ./out/vsix/*
       
-      - name: upload extension
-        run: |
-          echo ${{ secrets.VSCE_PASSWORD }} | vsce login ${{ secrets.VSCE_USER }}
-          vsce publish --pre-release  --packagePath ./out/vsix/*
-          vsce logout
+      - name: vsce logout
+        run: vsce logout
 
 
 
