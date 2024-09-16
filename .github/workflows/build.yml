@@ -23,7 +23,7 @@ on:
         description: os to use in the run
         type: string
         default: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-        required: true
+        required: false
 
 jobs:
   build:
