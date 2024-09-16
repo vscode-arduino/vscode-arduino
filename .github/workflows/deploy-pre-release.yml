@@ -1,0 +1,50 @@
+name: Publish pre-release extension to 
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/build-template.yml
+    with:
+      BUILD_FLAGS: '--pre-release'
+      os: '["ubuntu-latest"]'
+
+  upload:
+    needs: call-build
+    runs-on: ubuntu-latest
+    steps:       
+      - name: download-artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: VS Code extension VSIXes (ubuntu-latest)
+
+      - name: Use Node 18.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18.x
+
+      - name: install vsce
+        run: npm install --global vsce
+
+      - name: sainity checl
+        run: echo ${{ secrets.VSCE_PASSWORD }} | sha256sum
+
+      - name: vsce login
+        run: echo ${{ secrets.VSCE_PASSWORD }} | vsce login ${{ secrets.VSCE_USER }}
+
+      - name: publish extension
+        run: vsce publish --pre-release  --packagePath ./out/vsix/*
+      
+      - name: vsce logout
+        run: vsce logout
+
+
+
+
