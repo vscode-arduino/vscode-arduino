@@ -12,4 +12,3 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/templates/build.yml
-  
