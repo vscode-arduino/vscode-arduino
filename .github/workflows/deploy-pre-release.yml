@@ -11,7 +11,7 @@ on:
 
 jobs:
   call-build:
-    uses: ./.github/workflows/template/build.yml
+    uses: ./.github/workflows/build.yml
     with:
       BUILD_FLAGS: '--pre-release'
       os: '["ubuntu-latest"]'
