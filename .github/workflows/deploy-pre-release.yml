@@ -33,6 +33,9 @@ jobs:
       - name: install vsce
         run: npm install --global vsce
 
+      - name: sainity checl
+        run: echo ${{ secrets.VSCE_PASSWORD }} | sha256sum
+
       - name: vsce login
         run: echo ${{ secrets.VSCE_PASSWORD }} | vsce login ${{ secrets.VSCE_USER }}
 
