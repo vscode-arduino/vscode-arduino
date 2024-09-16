@@ -19,6 +19,16 @@ on:
         default: ''
         required: false
         type: string
+      os:
+        description: os to use in the run
+        type: choice
+        options:
+        - '["ubuntu-latest"]'
+        - '["windows-latest"]'
+        - '["macos-latest"]'
+        - '["ubuntu-latest", "macos-latest", "windows-latest"]'
+        default: '["ubuntu-latest", "macos-latest", "windows-latest"]'
+        required: true
 
 jobs:
   build:
@@ -28,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: ${{ fromJson(inputs.os) }} # [ ubuntu-latest, macos-latest, windows-latest ]
     
 
     steps:
