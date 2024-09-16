@@ -1,0 +1,30 @@
+name: Publish pre-release extension to 
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: build
+        uses: ./.github/workflows/build.yml
+        with:
+          BUILD_FLAGS: '--pre-release'
+  
+      - name: download-artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: VS Code extension VSIXes (ubuntu-latest)
+      
+      - name: upload extension
+        run: |
+          echo ${{ secrets.VSCE_PASSWORD }} | vsce login ${{ secrets.VSCE_USER }}
+          vsce publish --pre-release  --packagePath ./out/vsix/*
+          vsce logout
+
+
+
+
