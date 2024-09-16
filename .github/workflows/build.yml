@@ -92,12 +92,12 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
             export NODE_OPTIONS="--openssl-legacy-provider --no-experimental-fetch"
-            node build/package.js ${{ BUILD_FLAGS }}
+            node build/package.js ${{ env.BUILD_FLAGS }}
       - name: Build and pack extension (windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
             $env:NODE_OPTIONS="--openssl-legacy-provider --no-experimental-fetch"
-            node build/package.js ${{ BUILD_FLAGS }}
+            node build/package.js ${{ env.BUILD_FLAGS }}
       - name: Publish extension VSIX as artifact
         uses: actions/upload-artifact@v2
         with:
