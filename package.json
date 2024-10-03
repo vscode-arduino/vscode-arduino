@@ -377,7 +377,7 @@
     "@microsoft/vscode-serial-monitor-api": "^0.1.5",
     "@vscode/extension-telemetry": "~0.6.2",
     "body-parser": "^1.16.1",
-    "cocopa": "0.0.13",
+    "cocopa": "github:tylerjwatson/cocopa#semver:^0.0.15",
     "eventemitter2": "^4.1.0",
     "express": "^4.19.2",
     "extract-zip": "^2.0.1",
