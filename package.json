@@ -358,7 +358,7 @@
     "eslint-plugin-react": "^7.25.1",
     "eslint-plugin-require-path-exists": "^1.1.9",
     "fancy-log": "^2.0.0",
-    "gulp": "^4.0.2",
+    "gulp": "^5.0.0",
     "gulp-eslint": "^6.0.0",
     "gulp-sourcemaps": "^2.4.1",
     "gulp-tslint": "^8.1.4",
