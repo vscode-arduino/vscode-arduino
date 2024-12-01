@@ -369,7 +369,7 @@
     "plugin-error": "^2.0.1",
     "tslint": "^5.20.1",
     "typemoq": "^1.6.0",
-    "typescript": "^3.7.5",
+    "typescript": "^5.7.2",
     "vscode-test": "^1.4.0",
     "webpack": "^4.44.1"
   },
