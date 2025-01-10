@@ -17,6 +17,7 @@ const configKeys = {
     IGNORE_BOARDS: "arduino.ignoreBoards",
     SKIP_HEADER_PROVIDER: "arduino.skipHeaderProvider",
     USE_ARDUINO_CLI: "arduino.useArduinoCli",
+    USE_LOCAL_ARDUINO_CLI_CONFIG_FILE: "arduino.useLocalArduinoCliConfigFile",
     DISABLE_INTELLISENSE_AUTO_GEN: "arduino.disableIntelliSenseAutoGen",
     ANALYZE_ON_OPEN: "arduino.analyzeOnOpen",
     ANALYZE_ON_SETTING_CHANGE: "arduino.analyzeOnSettingChange",
@@ -34,6 +35,7 @@ export interface IVscodeSettings {
     ignoreBoards: string[];
     skipHeaderProvider: boolean;
     useArduinoCli: boolean;
+    useLocalArduinoCliConfigFile: boolean;
     disableIntelliSenseAutoGen: boolean;
     analyzeOnOpen: boolean;
     analyzeOnSettingChange: boolean;
@@ -121,6 +123,14 @@ export class VscodeSettings implements IVscodeSettings {
 
     public setUseArduinoCli(value: boolean): Promise<void> {
         return this.setConfigValue(configKeys.USE_ARDUINO_CLI, value, true);
+    }
+
+    public get useLocalArduinoCliConfigFile(): boolean {
+        return this.getConfigValue(configKeys.USE_LOCAL_ARDUINO_CLI_CONFIG_FILE);
+    }
+
+    public setUseLocalArduinoCliConfigFile(value: boolean): Promise<void> {
+        return this.setConfigValue(configKeys.USE_LOCAL_ARDUINO_CLI_CONFIG_FILE, value, true);
     }
 
     public get skipHeaderProvider(): boolean {
