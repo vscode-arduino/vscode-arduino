@@ -25,6 +25,7 @@ export interface IArduinoSettings {
     preferencePath: string;
     preferences: Map<string, string>;
     useArduinoCli: boolean;
+    useLocalArduinoCliConfigFile: boolean;
     usingBundledArduinoCli: boolean;
     analyzeOnSettingChange: boolean;
     reloadPreferences(): void;
@@ -42,6 +43,8 @@ export class ArduinoSettings implements IArduinoSettings {
     private _preferences: Map<string, string>;
 
     private _useArduinoCli: boolean;
+
+    private _useLocalArduinoCliConfigFile: boolean;
 
     private _usingBundledArduinoCli: boolean = false;
 
@@ -62,6 +65,7 @@ export class ArduinoSettings implements IArduinoSettings {
         const platform = os.platform();
         this._commandPath = VscodeSettings.getInstance().commandPath;
         this._useArduinoCli = VscodeSettings.getInstance().useArduinoCli;
+        this._useLocalArduinoCliConfigFile = VscodeSettings.getInstance().useLocalArduinoCliConfigFile;
         await this.tryResolveArduinoPath();
         if (platform === "win32") {
             await this.updateWindowsPath();
@@ -169,6 +173,10 @@ export class ArduinoSettings implements IArduinoSettings {
 
     public get useArduinoCli() {
         return this._useArduinoCli;
+    }
+
+    get useLocalArduinoCliConfigFile() {
+        return this._useLocalArduinoCliConfigFile;
     }
 
     public get usingBundledArduinoCli() {

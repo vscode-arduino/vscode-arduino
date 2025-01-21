@@ -668,6 +668,10 @@ export class ArduinoApp {
             }
         }
 
+        if (this.useArduinoCli() && this._settings.useLocalArduinoCliConfigFile) {
+            args.push("--config-file", path.join(ArduinoWorkspace.rootPath, "arduino-cli.yaml"));
+        }
+
         if (dc.buildPreferences) {
             for (const pref of dc.buildPreferences) {
                 // Note: BuildPrefSetting makes sure that each preference
