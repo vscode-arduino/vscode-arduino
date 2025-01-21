@@ -349,7 +349,7 @@
     "@types/winreg": "^1.2.30",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
-    "@vscode/vsce": "^2.16.0",
+    "@vscode/vsce": "^3.2.1",
     "acorn": "^7.4.0",
     "ajv": "^6.12.3",
     "babel-loader": "^8.2.2",
