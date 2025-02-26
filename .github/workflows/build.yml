@@ -65,14 +65,14 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-          brew install arduino --cask
+          brew install arduino-cli
 
       # Windows agents already have gulp installed.
       - name: Install gulp
         if: ${{ matrix.os != 'windows-latest' }}
         run: npm install --global gulp
       - name: Install global dependencies
-        run: npm install --global node-gyp vsce
+        run: npm install --global node-gyp @vscode/vsce
       - name: Install project dependencies
         run: npm install
 

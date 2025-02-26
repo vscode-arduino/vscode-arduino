@@ -212,11 +212,11 @@
           "default": false,
           "markdownDescription": "Use Arduino CLI installed instead of the legacy Arduino IDE. If `#arduino.path#` and `#arduino.commandPath#` are not set, the extension will use a version of Arduino CLI bundled with the extension. (Requires a restart after change)"
         },
-				"arduino.useLocalArduinoCliConfigFile": {
-					"type": "boolean",
-					"default": false,
-					"markdownDescription": "Use a local arduino-cli.yaml file instead the default .../Arduino15/arduino-cli.yaml. (Requires a restart after change)"
-				},
+        "arduino.useLocalArduinoCliConfigFile": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Use a local arduino-cli.yaml file instead the default .../Arduino15/arduino-cli.yaml. (Requires a restart after change)"
+        },
         "arduino.path": {
           "type": "string",
           "default": "",
@@ -349,6 +349,7 @@
     "@types/winreg": "^1.2.30",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "@vscode/test-electron": "^2.4.1",
     "@vscode/vsce": "^2.16.0",
     "acorn": "^7.4.0",
     "ajv": "^6.12.3",
@@ -375,7 +376,7 @@
     "tslint": "^5.20.1",
     "typemoq": "^1.6.0",
     "typescript": "^3.7.5",
-    "vscode-test": "^1.4.0",
+    "source-map": "^0.7.4",
     "webpack": "^4.44.1"
   },
   "dependencies": {
