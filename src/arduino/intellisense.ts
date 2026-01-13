@@ -17,6 +17,37 @@ export interface ICoCoPaContext {
 }
 
 /**
+ * Normalizes a compiler command line for correct parsing by cocopa.
+ * 
+ * Some GCC options use a separate argument format (e.g. "--param VALUE")
+ * which cocopa's shlex.split() incorrectly splits into two separate tokens.
+ * This function converts such options to the joined format ("--param=VALUE").
+ * 
+ * @param line The compiler command line to normalize
+ * @returns The normalized command line
+ * 
+ * @example
+ * // "--param max-inline-insns-single=500" → "--param=max-inline-insns-single=500"
+ */
+export function normalizeCompilerLine(line: string): string {
+    // List of GCC options that take a separate argument
+    // Add more patterns here if needed in the future
+    const patterns: Array<[RegExp, string]> = [
+        // --param NAME=VALUE → --param=NAME=VALUE
+        [/--param\s+(\S+)/g, '--param=$1'],
+        // Add more normalizations here as needed:
+        // [/-include\s+(\S+)/g, '-include=$1'],
+        // [/-isystem\s+(\S+)/g, '-isystem=$1'],
+    ];
+
+    let result = line;
+    for (const [pattern, replacement] of patterns) {
+        result = result.replace(pattern, replacement);
+    }
+    return result;
+}
+
+/**
  * Returns true if the combination of global enable/disable and project
  * specific override enable the auto-generation of the IntelliSense
  * configuration.
