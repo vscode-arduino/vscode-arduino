@@ -1,11 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 
-const { execSync } = require("child_process");
+const { execFileSync, execSync } = require("child_process");
 const { mkdirSync, readFileSync, writeFileSync } = require("fs");
 const { resolve } = require("path");
 const { argv } = require("process");
 
-const flags = argv.slice(2).join(" ");
+const flags = argv.slice(2);
 
 // Taken from https://code.visualstudio.com/api/working-with-extensions/publishing-extension#platformspecific-extensions
 const platforms = [
@@ -25,6 +25,7 @@ const platforms = [
 // .vscodeignore file based on common file and platform-specific path.
 const ignoreFile = readFileSync(resolve(__dirname, "..", ".vscodeignore"), "utf8");
 const customIgnoreFilePath = resolve(__dirname, "..", "out", ".vscodeignore");
+const vscePath = resolve(__dirname, "..", "node_modules", "@vscode", "vsce", "vsce");
 
 execSync('npm run build', { cwd: resolve(__dirname, ".."), stdio: "inherit" });
 mkdirSync(resolve(__dirname, "..", "out", "vsix"), { recursive: true });
@@ -33,8 +34,15 @@ for (const platform of platforms) {
     customIgnoreFilePath,
     ignoreFile + `!assets/platform/${platform}/**`
   );
-  const command = `vsce package --target ${platform} --out out/vsix/vscode-arduino-${platform}.vsix ${flags}`;
-  execSync(command, {
+  execFileSync(process.execPath, [
+    vscePath,
+    "package",
+    "--target",
+    platform,
+    "--out",
+    `out/vsix/vscode-arduino-${platform}.vsix`,
+    ...flags,
+  ], {
     cwd: resolve(__dirname, ".."),
     stdio: "inherit",
   });
