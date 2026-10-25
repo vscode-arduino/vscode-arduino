@@ -32,6 +32,16 @@ the repository's [release page](https://github.com/arduino/arduino-cli/releases/
 For custom versions, `arduino.path` must be set to the directory containing the
 Arduino CLI executable.
 
+When Arduino CLI is enabled, the extension asks the selected CLI to report its
+effective `directories.data` and `directories.user` settings. The Board Manager
+uses the reported data directory, and the Library Manager looks for manually
+installed libraries in `<directories.user>/libraries`. CLI environment
+overrides such as `ARDUINO_DIRECTORIES_DATA` are therefore honored as well. If
+`arduino.useLocalArduinoCliConfigFile` is enabled, the workspace's
+`arduino-cli.yaml` is used when querying these directories, matching build
+commands. If the CLI cannot report its configuration, the extension falls back
+to its platform defaults (including portable and Windows Store handling).
+
 ### Legacy Arduino IDE
 Use of the legacy Arduino IDE is not recommended, and support for the legacy
 Arduino IDE will be removed in a future version of the extension. The legacy
@@ -218,14 +228,13 @@ You can find the full list of issues on the [Issue Tracker](https://github.com/v
 Installation prerequisites:
 
 - [Git](https://git-scm.com/)
-- [Node.js](https://nodejs.org/) (>= 12.x)
-- [Npm](https://www.npmjs.com/) (>= 6.x)
+- [Node.js](https://nodejs.org/) (24.x LTS)
+- [Npm](https://www.npmjs.com/) (bundled with Node.js)
 
 To *run and develop*, do the following:
 - `git clone https://github.com/vscode-arduino/vscode-arduino`
 - `cd vscode-arduino`
 - Run `npm i`
-- Run `npm i -g gulp`
 - Open in Visual Studio Code (`code .`)
 - Press <kbd>F5</kbd> to debug.
 
