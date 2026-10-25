@@ -218,14 +218,13 @@ You can find the full list of issues on the [Issue Tracker](https://github.com/v
 Installation prerequisites:
 
 - [Git](https://git-scm.com/)
-- [Node.js](https://nodejs.org/) (>= 12.x)
-- [Npm](https://www.npmjs.com/) (>= 6.x)
+- [Node.js](https://nodejs.org/) (24.x LTS)
+- [Npm](https://www.npmjs.com/) (bundled with Node.js)
 
 To *run and develop*, do the following:
 - `git clone https://github.com/vscode-arduino/vscode-arduino`
 - `cd vscode-arduino`
 - Run `npm i`
-- Run `npm i -g gulp`
 - Open in Visual Studio Code (`code .`)
 - Press <kbd>F5</kbd> to debug.
 
