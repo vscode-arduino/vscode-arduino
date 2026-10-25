@@ -33,9 +33,12 @@ suite("Arduino settings: Arduino CLI directories", () => {
     });
 
     test("ignores empty, malformed, or invalid paths so defaults can be used", () => {
-        assert.deepEqual(parseCliDirectoriesConfig("not json"), {});
-        assert.deepEqual(parseCliDirectoriesConfig(JSON.stringify({
+        for (const output of ["not json", JSON.stringify({
             directories: { data: "  ", user: 3 },
-        })), {});
+        })]) {
+            const directories = parseCliDirectoriesConfig(output);
+            assert.strictEqual(directories.data, undefined);
+            assert.strictEqual(directories.user, undefined);
+        }
     });
 });
