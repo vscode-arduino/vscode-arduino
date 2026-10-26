@@ -9,6 +9,10 @@ import * as constants from "../common/constants";
 import { arduinoChannel } from "../common/outputChannel";
 import { ArduinoWorkspace } from "../common/workspace";
 import { DeviceContext } from "../deviceContext";
+import {
+    ArduinoGccParser,
+    IArduinoGccResult,
+} from "./compilerCommandParser";
 import { VscodeSettings } from "./vscodeSettings";
 
 export interface ICoCoPaContext {
@@ -70,39 +74,49 @@ export function makeCompilerParserContext(dc: DeviceContext): ICoCoPaContext {
             return;
         }
 
+        const result = runner.result as IArduinoGccResult;
+
         // Normalize compiler and include paths (resolve ".." and ".")
-        runner.result.normalize();
+        result.normalize();
         // Remove invalid paths
-        await runner.result.cleanup();
+        await result.cleanup();
 
         // Search for Arduino.h in the include paths - we need it for a
         // forced include - users expect Arduino symbols to be available
         // in main sketch without having to include the header explicitly
-        const ardHeader = await runner.result.findFile("Arduino.h");
-        const forcedIncludes = ardHeader.length > 0
-            ? ardHeader
-            : undefined;
-        if (!forcedIncludes) {
+        const ardHeader = await result.findFile("Arduino.h");
+        if (!ardHeader.length) {
             arduinoChannel.warning("Unable to locate \"Arduino.h\" within IntelliSense include paths.");
         }
 
-        // The C++ standard is set to the following default value if no compiler flag has been found.
-        const content = new ccp.CCppPropertiesContentResult(runner.result,
+        const forcedIncludes = Array.from(new Set([
+            ...(result.forcedIncludes || []),
+            ...ardHeader,
+        ]));
+
+        // Prevent null.d from being created in the workspace directory on
+        // macOS and Linux while retaining all other compiler arguments.
+        const mmdIndex = result.options.findIndex((element) => element === "-MMD");
+        if (mmdIndex !== -1) {
+            result.options.splice(mmdIndex, 1);
+        }
+
+        // Add USB Connected macro to defines.
+        result.defines.push("USBCON");
+
+        // The C++ standard is set to the following default value if no
+        // compiler flag has been found.
+        const content = new ccp.CCppPropertiesContentResult(result,
                                                             constants.C_CPP_PROPERTIES_CONFIG_NAME,
                                                             ccp.CCppPropertiesISMode.Gcc_X64,
                                                             ccp.CCppPropertiesCStandard.C11,
                                                             ccp.CCppPropertiesCppStandard.Cpp11,
-                                                            forcedIncludes);
-
-        // The following 4 lines are added to prevent null.d from being created in the workspace
-        // directory on MacOS and Linux. This is may be a bug in intelliSense
-        const mmdIndex = runner.result.options.findIndex((element) => element === "-MMD");
-        if (mmdIndex) {
-            runner.result.options.splice(mmdIndex);
+                                                            forcedIncludes.length
+                                                                ? forcedIncludes
+                                                                : undefined);
+        if (result.effectiveCppStandard) {
+            content.configurations[0].cppStandard = result.effectiveCppStandard;
         }
-
-        // Add USB Connected marco to defines
-        runner.result.defines.push("USBCON")
 
         try {
 
@@ -141,7 +155,10 @@ export function makeCompilerParserContext(dc: DeviceContext): ICoCoPaContext {
 function makeCompilerParserEngines(dc: DeviceContext) {
     const sketch = path.basename(dc.sketch);
     const trigger = ccp.getTriggerForArduinoGcc(sketch);
-    const gccParserEngine = new ccp.ParserGcc(trigger);
+    const gccParserEngine = new ArduinoGccParser(
+        trigger,
+        ArduinoWorkspace.rootPath || process.cwd(),
+    );
     return [gccParserEngine];
 }
 
