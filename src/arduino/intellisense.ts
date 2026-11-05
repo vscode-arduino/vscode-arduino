@@ -34,10 +34,10 @@ export function normalizeCompilerLine(line: string): string {
     // Add more patterns here if needed in the future
     const patterns: Array<[RegExp, string]> = [
         // --param NAME=VALUE → --param=NAME=VALUE
-        [/--param\s+(\S+)/g, '--param=$1'],
+        [/--param\s+(\S+)/g, "--param=$1"],
         // Add more normalizations here as needed:
-        // [/-include\s+(\S+)/g, '-include=$1'],
-        // [/-isystem\s+(\S+)/g, '-isystem=$1'],
+        // [/-include\s+(\S+)/g, "-include=$1"],
+        // [/-isystem\s+(\S+)/g, "-isystem=$1"],
     ];
 
     let result = line;
