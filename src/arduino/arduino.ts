@@ -18,7 +18,8 @@ import { BoardManager } from "./boardManager";
 import { ExampleManager } from "./exampleManager";
 import { AnalysisManager,
          isCompilerParserEnabled,
-         makeCompilerParserContext } from "./intellisense";
+         makeCompilerParserContext,
+         normalizeCompilerLine } from "./intellisense";
 import { LibraryManager } from "./libraryManager";
 import { VscodeSettings } from "./vscodeSettings";
 
@@ -806,7 +807,7 @@ export class ArduinoApp {
 
         const stdoutcb = wrapLineCallback((line: string) => {
             if (cocopa.callback) {
-                cocopa.callback(line);
+                cocopa.callback(normalizeCompilerLine(line));
             }
             if (verbose) {
                 arduinoChannel.channel.append(line);
