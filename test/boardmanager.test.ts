@@ -151,19 +151,31 @@ suite("Arduino: Board Manager.", () => {
 
     // Arduino: Board Manager: remove boards packages.
     // tslint:disable-next-line: only-arrow-functions
-    test("should be able to remove boards packages", () => {
-        try {
-            // Board Manager: remove boards packages.
-            const arduinoSettings = ArduinoContext.arduinoApp.settings;
-            const packagePath = Path.join(arduinoSettings.packagePath, "packages", "Microsoft");
-            if (util.directoryExistsSync(packagePath)) {
-                ArduinoContext.arduinoApp.uninstallBoard("Microsoft", packagePath);
-                assert.equal(util.directoryExistsSync(packagePath), false,
-                 "Package path still exist after calling uninstall package,remove the board package failure");
+    test("should be able to remove boards packages", function(done) {
+        this.timeout(30 * 1000);
+        const arduinoSettings = ArduinoContext.arduinoApp.settings;
+        const packagePath = Path.join(arduinoSettings.packagePath, "packages", "Microsoft");
+        const removePackage = (retries: number) => {
+            try {
+                if (util.directoryExistsSync(packagePath)) {
+                    ArduinoContext.arduinoApp.uninstallBoard("Microsoft", packagePath);
+                }
+                if (!util.directoryExistsSync(packagePath)) {
+                    done();
+                } else if (retries > 0) {
+                    setTimeout(() => removePackage(retries - 1), 250);
+                } else {
+                    done(new Error(`Package path still exists after uninstall: ${packagePath}`));
+                }
+            } catch (error) {
+                if ((error.code === "EBUSY" || error.code === "EPERM") && retries > 0) {
+                    setTimeout(() => removePackage(retries - 1), 250);
+                } else {
+                    done(error);
+                }
             }
-        } catch (error) {
-            assert.fail(true, false, new Error(error).message, new Error(error).name);
-        }
+        };
+        removePackage(20);
     });
 
 });

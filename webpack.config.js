@@ -6,7 +6,7 @@ const fs = require('fs-plus');
 
 function getEntry() {
   const entry = {};
-  const npmListRes = cp.execSync('npm list -only prod -json', {
+  const npmListRes = cp.execSync('npm list --omit=dev --json', {
     encoding: 'utf8'
   });
   const mod = JSON.parse(npmListRes);
@@ -59,6 +59,7 @@ const config = {
         path: path.resolve(__dirname, 'out/node_modules'),
         filename: '[name].js',
         libraryTarget: "commonjs2",
+        hashFunction: 'sha256',
         devtoolModuleFilenameTemplate: "../[resource-path]",
     },
     externals: {

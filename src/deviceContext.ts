@@ -339,7 +339,7 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
     }
 
     private saveContext() {
-        if (!ArduinoWorkspace.rootPath) {
+        if (this._suppressSaveContext || !ArduinoWorkspace.rootPath) {
             return;
         }
         const deviceConfigFile = path.join(ArduinoWorkspace.rootPath, ARDUINO_CONFIG_FILE);
