@@ -18,14 +18,14 @@ export interface ICoCoPaContext {
 
 /**
  * Normalizes a compiler command line for correct parsing by cocopa.
- * 
+ *
  * Some GCC options use a separate argument format (e.g. "--param VALUE")
  * which cocopa's shlex.split() incorrectly splits into two separate tokens.
  * This function converts such options to the joined format ("--param=VALUE").
- * 
+ *
  * @param line The compiler command line to normalize
  * @returns The normalized command line
- * 
+ *
  * @example
  * // "--param max-inline-insns-single=500" → "--param=max-inline-insns-single=500"
  */
