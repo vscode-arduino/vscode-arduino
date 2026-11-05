@@ -1,12 +1,14 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
+import * as childProcess from "child_process";
 import { constants as fsconstants, promises as fs } from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import * as WinReg from "winreg";
 import * as util from "../common/util";
+import { ArduinoWorkspace } from "../common/workspace";
 
 import { messages } from "../common/constants";
 import { resolveArduinoPath } from "../common/platform";
@@ -29,6 +31,23 @@ export interface IArduinoSettings {
     usingBundledArduinoCli: boolean;
     analyzeOnSettingChange: boolean;
     reloadPreferences(): void;
+}
+
+export function parseCliDirectoriesConfig(output: string): { data?: string; user?: string } {
+    try {
+        const parsed = JSON.parse(output);
+        const config = parsed.config || parsed;
+        const directories = config.directories || config.Directories || {};
+        const valid = (value: any): string | undefined => {
+            return typeof value === "string" && value.trim() && value.indexOf("\0") < 0 ? value.trim() : undefined;
+        };
+        return {
+            data: valid(directories.data || directories.Data),
+            user: valid(directories.user || directories.User),
+        };
+    } catch {
+        return {};
+    }
 }
 
 export class ArduinoSettings implements IArduinoSettings {
@@ -112,6 +131,12 @@ export class ArduinoSettings implements IArduinoSettings {
             if (this._commandPath === "" && !this._useArduinoCli) {
                 this._commandPath = "/Contents/MacOS/Arduino";
             }
+        }
+
+        // Ask the selected CLI to resolve its own configuration. This honors its
+        // config file discovery and environment overrides without parsing YAML.
+        if (this._useArduinoCli) {
+            await this.updateCliDirectories();
         }
     }
 
@@ -223,8 +248,7 @@ export class ArduinoSettings implements IArduinoSettings {
         } else if (util.fileExistsSync(path.join(this._arduinoPath, "AppxManifest.xml"))) {
             this._packagePath = path.join(folder, "ArduinoData");
         } else if (process.env.hasOwnProperty("ARDUINO_DIRECTORIES_DATA")) {
-
-            this._packagePath = process.env.ARDUINO_DIRECTORIES_DATA
+            this._packagePath = this.validDirectoryValue(process.env.ARDUINO_DIRECTORIES_DATA) || path.join(process.env.LOCALAPPDATA, "Arduino15");
         } else {
             this._packagePath = path.join(process.env.LOCALAPPDATA, "Arduino15");
         }
@@ -238,6 +262,58 @@ export class ArduinoSettings implements IArduinoSettings {
         } else {
             this._sketchbookPath = path.join(folder, "Arduino");
         }
+    }
+
+    private async updateCliDirectories(): Promise<void> {
+        const cliPath = this.commandPath;
+        const configFileArgs: string[] = [];
+        if (this._useLocalArduinoCliConfigFile) {
+            const workspacePath = ArduinoWorkspace.rootPath;
+            if (workspacePath) {
+                configFileArgs.push("--config-file", path.join(workspacePath, "arduino-cli.yaml"));
+            }
+        }
+        let lastError: Error;
+        for (const formatArgs of [["--format", "json"], ["--json"]]) {
+            try {
+                const output: string = await new Promise((resolve, reject) => {
+                    childProcess.execFile(cliPath, ["config", "dump", ...formatArgs, ...configFileArgs], { windowsHide: true }, (error, stdout) => {
+                        if (error) {
+                            reject(error);
+                        } else {
+                            resolve(stdout);
+                        }
+                    });
+                });
+                const directories = parseCliDirectoriesConfig(output);
+                const dataPath = this.validDirectoryValue(directories.data);
+                const userPath = this.validDirectoryValue(directories.user);
+                if (!dataPath && !userPath) {
+                    throw new Error("CLI returned no valid directories.data or directories.user values");
+                }
+                if (dataPath) {
+                    this._packagePath = path.resolve(dataPath);
+                }
+                if (userPath) {
+                    this._sketchbookPath = path.resolve(userPath);
+                }
+                if (!dataPath || !userPath) {
+                    const missingDirectory = dataPath ? "user" : "data";
+                    Logger.warn(`Arduino CLI configuration did not provide a valid directories.${missingDirectory} value (CLI: ${cliPath}).`);
+                }
+                return;
+            } catch (error) {
+                lastError = error;
+            }
+        }
+        Logger.warn(`Unable to read Arduino CLI directories using "${cliPath} config dump". Falling back to extension defaults. ${lastError}`);
+    }
+
+    private validDirectoryValue(value: any): string | undefined {
+        if (typeof value !== "string" || !value.trim() || value.indexOf("\0") >= 0) {
+            return undefined;
+        }
+        return value.trim();
     }
 
     private async bundledArduinoCliPath(): Promise<string | undefined> {

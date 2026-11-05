@@ -12,6 +12,7 @@ import { DeviceContext } from "../deviceContext";
 import * as Logger from "../logger/logger";
 import LocalWebServer from "./localWebServer";
 
+const ALLOWED_COMMANDS = ["arduino.showBoardManager"];
 export class ArduinoContentProvider implements vscode.TextDocumentContentProvider {
     private _webserver: LocalWebServer;
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
@@ -176,7 +177,11 @@ export class ArduinoContentProvider implements vscode.TextDocumentContentProvide
             return res.status(400).send("BAD Request! Missing { command } parameter!");
         } else {
             try {
-                await vscode.commands.executeCommand(req.body.command);
+                const command = req.body.command;
+                if (!ALLOWED_COMMANDS.includes(command)) {
+                    throw new Error("invalid command");
+                }
+                await vscode.commands.executeCommand(command);
                 return res.json({
                     status: "OK",
                 });

@@ -10,7 +10,7 @@ SHELL ["/bin/bash", "-c"]
 
 # install node js
 ENV NVM_DIR=/usr/local/nvm
-ENV NODE_VERSION=18.20.4
+ENV NODE_VERSION=24.22.0
 RUN mkdir -p $NVM_DIR && export NVM_DIR=$NVM_DIR && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash 
 RUN source $NVM_DIR/nvm.sh \
     && nvm install $NODE_VERSION \
@@ -21,7 +21,7 @@ ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
 
 # install project tool dependancies
-RUN npm install -g gulp node-gyp @vscode/vsce
+RUN npm install -g gulp node-gyp@12.4.0 @vscode/vsce@2.32.0
 RUN apt install -y g++-multilib build-essential libudev-dev unzip
 
 # SSHD configuration
@@ -63,7 +63,6 @@ USER root:root
 RUN cat ~/.bashrc >> .bashrc
 RUN echo "export NODE_PATH=$NVM_DIR/v$NODE_VERSION/lib/node_modules" >> .bashrc
 RUN echo "export PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH" >> .bashrc
-RUN echo "export NODE_OPTIONS=\"--openssl-legacy-provider --no-experimental-fetch\"" >> .bashrc
 RUN echo "source $NVM_DIR/nvm.sh" >> .bashrc
 RUN cat .bashrc >> .zshrc
 ENTRYPOINT ["/bin/bash", "-c", "/usr/sbin/sshd && su ubuntu"]

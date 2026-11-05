@@ -11,7 +11,8 @@ module.exports = {
     ],
     output: {
         path: `${__dirname}/../../out/views`,
-        filename: "app.js"
+        filename: "app.js",
+        hashFunction: "sha256"
     },
     resolve: {
         extensions: [".js", ".ts", ".tsx"]
