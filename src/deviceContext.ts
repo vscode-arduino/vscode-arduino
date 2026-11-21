@@ -87,6 +87,8 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
 
     private _sketchStatusBar: vscode.StatusBarItem;
 
+    private _sketchStatusBarEnabled: boolean = false;
+
     private _prebuild: string;
 
     private _programmer: string;
@@ -109,6 +111,9 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
             this._sketchStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, constants.statusBarPriority.SKETCH);
             this._sketchStatusBar.command = "arduino.selectSketch";
             this._sketchStatusBar.tooltip = "Sketch File";
+            // Keep the status bar in sync when the sketch changes by other
+            // means than "Select Sketch", e.g. when arduino.json is edited.
+            this._settings.sketch.emitter.event(() => this.updateSketchStatusBar());
         }
     }
 
@@ -167,11 +172,8 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
     }
 
     public showStatusBar() {
-        if (!this._settings.sketch.value) {
-            return false;
-        }
-        this._sketchStatusBar.text = this._settings.sketch.value;
-        this._sketchStatusBar.show();
+        this._sketchStatusBarEnabled = true;
+        return this.updateSketchStatusBar();
     }
 
     public get onChangePort() { return this._settings.port.emitter.event }
@@ -344,5 +346,22 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
         }
         const deviceConfigFile = path.join(ArduinoWorkspace.rootPath, ARDUINO_CONFIG_FILE);
         this._settings.save(deviceConfigFile);
+    }
+
+    /**
+     * Shows the current sketch in the status bar, once showStatusBar() has
+     * enabled it, and hides the item while no sketch is set.
+     */
+    private updateSketchStatusBar() {
+        if (!this._sketchStatusBarEnabled || !this._sketchStatusBar) {
+            return false;
+        }
+        if (!this._settings.sketch.value) {
+            this._sketchStatusBar.hide();
+            return false;
+        }
+        this._sketchStatusBar.text = this._settings.sketch.value;
+        this._sketchStatusBar.show();
+        return true;
     }
 }
