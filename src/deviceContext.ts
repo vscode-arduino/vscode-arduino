@@ -258,6 +258,29 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
         this.saveContext();
     }
 
+    /**
+     * The output path with `${sketchName}` replaced by the name of the
+     * sketch file without its extension, so that each sketch can have a
+     * build folder of its own. Undefined when no output path is set.
+     */
+    public get resolvedOutput(): string | undefined {
+        if (!this.output) {
+            return undefined;
+        }
+        const sketchName = this.sketch ? path.basename(this.sketch, path.extname(this.sketch)) : "";
+        return this.output.replace(/\$\{sketchName\}/g, sketchName);
+    }
+
+    /**
+     * The part of the output path that is the same for all sketches: up to
+     * its first variable. Undefined when no output path is set, or when it
+     * starts with a variable.
+     */
+    public get outputBase(): string | undefined {
+        const base = this.output ? this.output.split("${")[0].replace(/[\\/]+$/, "") : "";
+        return base || undefined;
+    }
+
     public get intelliSenseGen() {
         return this._settings.intelliSenseGen.value;
     }
