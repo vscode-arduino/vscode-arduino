@@ -6,6 +6,7 @@ import {
     ArduinoGccParser,
     IArduinoGccResult,
     preprocessGccCompilerCommand,
+    removeFlagDependentDefines,
     resolveCppStandard,
     ResponseFileReader,
 } from "../src/arduino/compilerCommandParser";
@@ -68,6 +69,29 @@ suite("Arduino: GCC compiler command parser", () => {
         assert.equal(resolveCppStandard(["-std=c++2b"]), "c++23");
         assert.equal(resolveCppStandard(["-std=gnu++2c"]), "gnu++26");
         assert.equal(resolveCppStandard(["-Wall"]), undefined);
+    });
+
+    test("leaves out the built-in defines that depend on the C++ standard or flags", () => {
+        assert.deepEqual(removeFlagDependentDefines([
+            "__cplusplus=201402L",
+            "__cpp_constexpr=201304",
+            "__cpp_rtti=199711",
+            "__STRICT_ANSI__",
+            "__GXX_EXPERIMENTAL_CXX0X__=1",
+            "__GXX_RTTI=1",
+            "__EXCEPTIONS=1",
+            "__GNUC__=8",
+            "__SIZEOF_POINTER__=4",
+            "__XTENSA__=1",
+            "__cplusplus_cli=200406",
+            "ARDUINO=10607",
+        ]), [
+            "__GNUC__=8",
+            "__SIZEOF_POINTER__=4",
+            "__XTENSA__=1",
+            "__cplusplus_cli=200406",
+            "ARDUINO=10607",
+        ]);
     });
 
     test("passes expanded arguments through the CoCoPa runner", () => {
