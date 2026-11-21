@@ -799,7 +799,12 @@ export class ArduinoApp {
         // Push sketch as last argument
         args.push(path.join(ArduinoWorkspace.rootPath, dc.sketch));
 
-        const cocopa = makeCompilerParserContext(dc);
+        // With --only-compilation-database, Arduino CLI runs the core's
+        // prebuild hooks but skips its postbuild hooks. The ESP32 cores use
+        // that pair to put -DARDUINO_CORE_BUILD into a response file
+        // (file_opts) only while the core compiles, so after such a run the
+        // file still holds it and would leak into the sketch's defines.
+        const cocopa = makeCompilerParserContext(dc, compilationDatabaseOnly ? ["ARDUINO_CORE_BUILD"] : []);
 
         const cleanup = async (result: "ok" | "error") => {
             let ret = true;
