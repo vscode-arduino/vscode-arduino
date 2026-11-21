@@ -183,6 +183,7 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
     public get onChangePrebuild() { return this._settings.prebuild.emitter.event }
     public get onChangePostbuild() { return this._settings.postbuild.emitter.event }
     public get onChangeProgrammer() { return this._settings.programmer.emitter.event }
+    public get onChangeBuildPreferences() { return this._settings.buildPreferences.emitter.event }
 
     public get port() {
         return this._settings.port.value;

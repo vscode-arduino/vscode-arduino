@@ -100,29 +100,42 @@ class StrSetting extends Setting<string> {
 }
 
 class BuildPrefSetting extends Setting<string[][]> {
-    public get value() {
-        return super.value;
-    }
-    public set value(value: string[][]) {
-        if (!Array.isArray(value)) {
-            super.value = super.default;
-            return;
-        }
-        if (value.length <= 0) {
-            super.value = super.default;
-            return;
+    /**
+     * Returns true if the value is a non-empty list of [key, value] pairs of
+     * strings.
+     */
+    private static isValid(value: string[][]): boolean {
+        if (!Array.isArray(value) || value.length <= 0) {
+            return false;
         }
         for (const pref of value) {
             if (!Array.isArray(pref) || pref.length !== 2) {
-                super.value = super.default;
-                return;
+                return false;
             }
             for (const i of pref) {
                 if (typeof i !== "string") {
-                    super.value = super.default;
-                    return;
+                    return false;
                 }
             }
+        }
+        return true;
+    }
+    public get value() {
+        return super.value;
+    }
+    /**
+     * Set the build preferences. Anything else than a non-empty list of
+     * [key, value] pairs of strings sets the default value (undefined).
+     * The value is compared by its contents, not by identity: every load of
+     * arduino.json parses new arrays, and only a real change may set the
+     * modified flag and fire the event.
+     */
+    public set value(value: string[][]) {
+        if (!BuildPrefSetting.isValid(value)) {
+            value = super.default;
+        }
+        if (JSON.stringify(value) === JSON.stringify(super.value)) {
+            return;
         }
         super.value = value;
     }

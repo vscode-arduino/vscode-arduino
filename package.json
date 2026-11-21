@@ -282,7 +282,7 @@
         "arduino.analyzeOnSettingChange": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "When true, automatically run analysis when board, configuration, or sketch settings are changed."
+          "markdownDescription": "When true, automatically run analysis when board, configuration, sketch, or build preferences settings are changed."
         }
       }
     },
