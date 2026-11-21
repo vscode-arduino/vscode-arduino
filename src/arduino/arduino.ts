@@ -15,6 +15,7 @@ import * as logger from "../logger/logger";
 import { DeviceContext } from "../deviceContext";
 import { IArduinoSettings } from "./arduinoSettings";
 import { BoardManager } from "./boardManager";
+import { readSketchCompileCommand } from "./compilerCommandParser";
 import { ExampleManager } from "./exampleManager";
 import { AnalysisManager,
          isCompilerParserEnabled,
@@ -180,7 +181,10 @@ export class ArduinoApp {
      *  * BuildMode.UploadProgrammer: Compile and upload using the user
      *     selectable programmer
      *  * BuildMode.Analyze: Compile, analyze the output and generate
-     *     IntelliSense configuration from it.
+     *     IntelliSense configuration from it. With the Arduino CLI and a
+     *     build directory, only the compilation database is written and the
+     *     sketch's compile command is taken from it, which skips compiling
+     *     and linking.
      *  * BuildMode.Verify: Just compile.
      * All build modes except for BuildMode.Analyze run interactively, i.e. if
      * something is missing, it tries to query the user for the missing piece
@@ -752,6 +756,14 @@ export class ArduinoApp {
             arduinoChannel.warning(msg);
         }
 
+        // An analysis only needs the sketch's compile command: with the
+        // Arduino CLI and a known build directory, have it write the
+        // compilation database instead of compiling and linking the sketch.
+        const compilationDatabaseOnly = buildMode === BuildMode.Analyze && this.useArduinoCli() && !!buildDir;
+        if (compilationDatabaseOnly) {
+            args.push("--only-compilation-database");
+        }
+
         // Environment variables passed to pre- and post-build commands
         const env = {
             VSCA_BUILD_MODE: buildMode,
@@ -793,6 +805,16 @@ export class ArduinoApp {
             let ret = true;
             if (result === "ok") {
                 ret = await this.runPrePostBuildCommand(dc, env, "post");
+            }
+            if (compilationDatabaseOnly && result === "ok" && cocopa.callback) {
+                // Nothing was compiled, so the output has no compile command
+                // to parse: take the sketch's one from the database.
+                const command = readSketchCompileCommand(buildDir, dc.sketch);
+                if (command) {
+                    cocopa.callback(normalizeCompilerLine(command));
+                } else {
+                    arduinoChannel.warning(`No compile command for the sketch in ${path.join(buildDir, "compile_commands.json")}.`);
+                }
             }
             await cocopa.conclude();
             if (buildMode === BuildMode.Upload || buildMode === BuildMode.UploadProgrammer) {

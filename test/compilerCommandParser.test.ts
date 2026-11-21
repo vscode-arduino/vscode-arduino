@@ -1,11 +1,14 @@
 import * as assert from "assert";
 import * as ccp from "cocopa";
+import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 
 import {
     ArduinoGccParser,
     IArduinoGccResult,
     preprocessGccCompilerCommand,
+    readSketchCompileCommand,
     removeFlagDependentDefines,
     resolveCppStandard,
     ResponseFileReader,
@@ -173,5 +176,48 @@ suite("Arduino: GCC compiler command parser", () => {
         assert.deepEqual(result.forcedIncludes, [forcedHeader]);
         assert.equal(result.command.includes(`--sysroot=${cwd}`), true);
         assert.equal(result.command.includes("-Wall"), true);
+    });
+
+    test("reads the sketch's compile command from compile_commands.json for the CoCoPa runner", () => {
+        const buildDir = fs.mkdtempSync(path.join(os.tmpdir(), "vscode-arduino-build "));
+        try {
+            const sdkInclude = path.join(buildDir, "sdk", "include") + "/";
+            const compiler = path.join(buildDir, "Tool Chain", "xtensa-esp32s3-elf-g++");
+            const entry = (file: string) => ({
+                arguments: [
+                    compiler,
+                    "-DMBEDTLS_CONFIG_FILE=\"mbedtls/esp_config.h\"",
+                    "-iprefix", sdkInclude,
+                    "-iwithprefixbefore", "freertos/include",
+                    "-std=gnu++11",
+                    "-c", file,
+                    "-o", `${file}.o`,
+                ],
+                directory: buildDir,
+                file,
+            });
+            fs.writeFileSync(path.join(buildDir, "compile_commands.json"), JSON.stringify([
+                entry(path.join(buildDir, "core", "main.cpp")),
+                entry(path.join(buildDir, "sketch", "MySketch.ino.cpp")),
+            ]));
+
+            const command = readSketchCompileCommand(buildDir, path.join("MySketch", "MySketch.ino"));
+            assert.ok(command);
+            const parser = new ArduinoGccParser(ccp.getTriggerForArduinoGcc("MySketch.ino"), buildDir);
+            parser.infoParser.enabled = false;
+            const runner = new ccp.Runner([parser]);
+            runner.parse(command);
+
+            const result = runner.result as IArduinoGccResult;
+            assert.ok(result);
+            assert.deepEqual(result.includes, [path.join(sdkInclude, "freertos/include")]);
+            assert.equal(result.defines.includes("MBEDTLS_CONFIG_FILE=\"mbedtls/esp_config.h\""), true);
+            assert.equal(result.effectiveCppStandard, "gnu++11");
+
+            assert.equal(readSketchCompileCommand(buildDir, path.join("Other", "Other.ino")), undefined);
+            assert.equal(readSketchCompileCommand(path.join(buildDir, "missing"), "MySketch.ino"), undefined);
+        } finally {
+            fs.rmSync(buildDir, { recursive: true, force: true });
+        }
     });
 });
