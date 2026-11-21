@@ -247,6 +247,11 @@
           "default": false,
           "description": "Clear the output logs before uploading or verifying."
         },
+        "arduino.analyzingSketchFocusOutput": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "When true, an IntelliSense analysis of the sketch (run when the board, configuration or sketch changes) reveals the Arduino output. When false, the output is still written but stays in the background; the status bar shows the analysis in progress and a failed one."
+        },
         "arduino.openPDEFiletype": {
           "type": "boolean",
           "default": false,

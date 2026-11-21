@@ -18,6 +18,7 @@ import {
     ARDUINO_CONFIG_FILE, ARDUINO_MANAGER_PROTOCOL, ARDUINO_MODE, BOARD_CONFIG_URI, BOARD_MANAGER_URI, EXAMPLES_URI,
     LIBRARY_MANAGER_URI,
 } from "./common/constants";
+import { arduinoChannel } from "./common/outputChannel";
 import { validateArduinoPath } from "./common/platform";
 import * as util from "./common/util";
 import { ArduinoWorkspace } from "./common/workspace";
@@ -301,6 +302,9 @@ export async function activate(context: vscode.ExtensionContext) {
     registerNonArduinoCommand("arduino.openSerialMonitor", () => serialMonitor.openSerialMonitor());
     registerNonArduinoCommand("arduino.changeTimestampFormat", () => serialMonitor.changeTimestampFormat());
     registerNonArduinoCommand("arduino.closeSerialMonitor", (port) => serialMonitor.closeSerialMonitor(port));
+
+    // Run by clicking the analysis status bar item.
+    context.subscriptions.push(vscode.commands.registerCommand("arduino.showOutput", () => arduinoChannel.show()));
 
     const completionProvider = new completionProviderModule.CompletionProvider();
     context.subscriptions.push(vscode.languages.registerCompletionItemProvider(ARDUINO_MODE, completionProvider, "<", '"', "."));

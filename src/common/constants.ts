@@ -47,5 +47,6 @@ export const statusBarPriority = {
     BOARD: 60,
     ENDING: 70,
     SKETCH: 80,
+    ANALYSIS: 85,
     PROGRAMMER: 90,
 };
