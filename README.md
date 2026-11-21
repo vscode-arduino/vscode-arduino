@@ -104,6 +104,7 @@ This extension provides several commands in the Command Palette (<kbd>F1</kbd> o
 | `arduino.disableIntelliSenseAutoGen` | When `true` vscode-arduino will not auto-generate an IntelliSense configuration (i.e. `.vscode/c_cpp_properties.json`) by analyzing Arduino's compiler output. |
 | `arduino.analyzeOnOpen` | When true, automatically run analysis when the project is opened. Only works when `arduino.analyzeOnSettingChange` is true. |
 | `arduino.analyzeOnSettingChange` | When true, automatically run analysis when board, configuration, or sketch settings are changed. |
+| `arduino.followActiveEditorSketch` | When true, the sketch of the file in the active editor becomes the current sketch (`sketch` in `.vscode/arduino.json`). A file belongs to the nearest folder above it that contains a `<folder name>.ino`, so a sketch's other `.ino`, `.h` and `.cpp` files count too. Sketches in the sketchbook's `hardware` and `libraries` folders and in the output folder are skipped, as in "Arduino: Select Sketch". Useful for a workspace folder with many sketches, such as a sketchbook. The default value is `false`. |
 
 The following Visual Studio Code settings are available for the Arduino extension. These can be set in global user preferences <kbd>Ctrl</kbd> + <kbd>,</kbd> *or* <kbd>Cmd</kbd> + <kbd>,</kbd> or workspace settings (`.vscode/settings.json`). The latter overrides the former.
 

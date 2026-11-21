@@ -283,6 +283,11 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "When true, automatically run analysis when board, configuration, or sketch settings are changed."
+        },
+        "arduino.followActiveEditorSketch": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "When true, the sketch of the file in the active editor becomes the current sketch (`sketch` in `.vscode/arduino.json`). A file belongs to the nearest folder above it that contains a `<folder name>.ino`. Useful for a workspace folder with many sketches, such as a sketchbook."
         }
       }
     },

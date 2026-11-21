@@ -21,6 +21,7 @@ const configKeys = {
     DISABLE_INTELLISENSE_AUTO_GEN: "arduino.disableIntelliSenseAutoGen",
     ANALYZE_ON_OPEN: "arduino.analyzeOnOpen",
     ANALYZE_ON_SETTING_CHANGE: "arduino.analyzeOnSettingChange",
+    FOLLOW_ACTIVE_EDITOR_SKETCH: "arduino.followActiveEditorSketch",
 };
 
 export interface IVscodeSettings {
@@ -39,6 +40,7 @@ export interface IVscodeSettings {
     disableIntelliSenseAutoGen: boolean;
     analyzeOnOpen: boolean;
     analyzeOnSettingChange: boolean;
+    followActiveEditorSketch: boolean;
     updateAdditionalUrls(urls: string[]): void;
     setUseArduinoCli(value: boolean): Promise<void>;
     setArduinoPath(value: string): Promise<void>;
@@ -147,6 +149,10 @@ export class VscodeSettings implements IVscodeSettings {
 
     public get analyzeOnSettingChange(): boolean {
         return this.getConfigValue<boolean>(configKeys.ANALYZE_ON_SETTING_CHANGE);
+    }
+
+    public get followActiveEditorSketch(): boolean {
+        return this.getConfigValue<boolean>(configKeys.FOLLOW_ACTIVE_EDITOR_SKETCH);
     }
 
     public async updateAdditionalUrls(value) {

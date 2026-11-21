@@ -501,3 +501,29 @@ export async function getPlatform(): Promise<string> {
     }
     return `${platform}-${process.arch}`;
 }
+
+/**
+ * Returns true if childPath is strictly inside parentPath.
+ */
+export function isPathInside(parentPath: string, childPath: string): boolean {
+    const relative = path.relative(parentPath, childPath);
+    return !!relative && !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+
+/**
+ * Finds the main sketch file that a file belongs to: `<folder>/<folder>.ino`
+ * of the nearest folder above the file, searching up to (not including)
+ * rootPath.
+ * @param rootPath The workspace folder.
+ * @param filePath Any file below rootPath.
+ * @returns The absolute path of the main sketch file, or undefined.
+ */
+export function findSketchForFile(rootPath: string, filePath: string): string | undefined {
+    for (let folder = path.dirname(filePath); isPathInside(rootPath, folder); folder = path.dirname(folder)) {
+        const mainSketch = path.join(folder, `${path.basename(folder)}.ino`);
+        if (fileExistsSync(mainSketch)) {
+            return mainSketch;
+        }
+    }
+    return undefined;
+}
