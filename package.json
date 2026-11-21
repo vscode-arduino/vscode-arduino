@@ -269,6 +269,15 @@
           "type": "boolean",
           "default": false
         },
+        "arduino.defaultSerialMonitorBaudRate": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null,
+          "minimum": 1,
+          "markdownDescription": "The baud rate the serial monitor opens with. When set, **Arduino: Open Serial Monitor** uses it instead of asking for a baud rate; when `null`, it asks every time."
+        },
         "arduino.ignoreBoards": {
           "type": "array",
           "default": []
