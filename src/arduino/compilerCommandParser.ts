@@ -97,6 +97,24 @@ export function resolveCppStandard(options: string[]): string | undefined {
     return standard;
 }
 
+/**
+ * Leaves out the built-in defines whose values depend on the C++ standard or
+ * on compiler flags: __cplusplus, the __cpp_* feature-test macros,
+ * __STRICT_ANSI__, __GXX_EXPERIMENTAL_CXX0X__, __GXX_RTTI and __EXCEPTIONS.
+ *
+ * CoCoPa queries the compiler for its built-in defines without any of the
+ * sketch's flags ("-xc++ -dM -E"), so these hold the compiler's defaults -
+ * GCC 8's __cplusplus=201402L for a sketch built with -std=gnu++17, or
+ * __GXX_RTTI with -fno-rtti. As explicit defines they would override what
+ * IntelliSense derives from cppStandard and compilerArgs, and libstdc++
+ * headers such as <optional> would come up empty. Without them, IntelliSense
+ * sets them itself, from the compiler and the configuration's flags.
+ */
+export function removeFlagDependentDefines(defines: string[]): string[] {
+    const flagDependent = /^(__cplusplus|__cpp_\w+|__STRICT_ANSI__|__GXX_EXPERIMENTAL_CXX0X__|__GXX_RTTI|__EXCEPTIONS)$/;
+    return defines.filter((define) => !flagDependent.test(define.split("=")[0]));
+}
+
 export function splitGccArguments(input: string): string[] {
     const result: string[] = [];
     let current = "";
