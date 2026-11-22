@@ -114,6 +114,11 @@ export class ArduinoApp {
             dc.onChangeBoard(requestAnalysis);
             dc.onChangeConfiguration(requestAnalysis);
             dc.onChangeSketch(requestAnalysis);
+            vscode.workspace.onDidChangeConfiguration((event) => {
+                if (event.affectsConfiguration("arduino.additionalLibraryFolders")) {
+                    requestAnalysis();
+                }
+            });
         }
     }
 
@@ -671,6 +676,20 @@ export class ArduinoApp {
 
         if (this.useArduinoCli() && this._settings.useLocalArduinoCliConfigFile) {
             args.push("--config-file", path.join(ArduinoWorkspace.rootPath, "arduino-cli.yaml"));
+        }
+
+        // "arduino-cli upload" has no --libraries option; every other CLI
+        // mode compiles.
+        const compiles = buildMode !== BuildMode.CliUpload && buildMode !== BuildMode.CliUploadProgrammer;
+        if (this.useArduinoCli() && compiles) {
+            for (const folder of VscodeSettings.getInstance().additionalLibraryFolders) {
+                const libraryFolder = path.resolve(ArduinoWorkspace.rootPath, folder);
+                if (util.directoryExistsSync(libraryFolder)) {
+                    args.push("--libraries", libraryFolder);
+                } else {
+                    arduinoChannel.warning(`arduino.additionalLibraryFolders: skipping ${libraryFolder}, which is not a folder`);
+                }
+            }
         }
 
         if (dc.buildPreferences) {
