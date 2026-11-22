@@ -87,7 +87,12 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
 
     private _sketchStatusBar: vscode.StatusBarItem;
 
-    private _sketchStatusBarEnabled: boolean = false;
+    /**
+     * Keeps the sketch status bar item in sync with the sketch setting.
+     * Registered by showStatusBar(), so it exists only while the item is
+     * enabled.
+     */
+    private _sketchStatusBarListener: vscode.Disposable;
 
     private _prebuild: string;
 
@@ -111,9 +116,6 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
             this._sketchStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, constants.statusBarPriority.SKETCH);
             this._sketchStatusBar.command = "arduino.selectSketch";
             this._sketchStatusBar.tooltip = "Sketch File";
-            // Keep the status bar in sync when the sketch changes by other
-            // means than "Select Sketch", e.g. when arduino.json is edited.
-            this._settings.sketch.emitter.event(() => this.updateSketchStatusBar());
         }
     }
 
@@ -123,6 +125,9 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
         }
         if (this._vscodeWatcher) {
             this._vscodeWatcher.dispose();
+        }
+        if (this._sketchStatusBarListener) {
+            this._sketchStatusBarListener.dispose();
         }
     }
 
@@ -171,8 +176,18 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
             });
     }
 
+    /**
+     * Enables the sketch status bar item. From then on it follows the sketch
+     * setting, also when the sketch changes by other means than "Select
+     * Sketch", e.g. when arduino.json is edited.
+     */
     public showStatusBar() {
-        this._sketchStatusBarEnabled = true;
+        if (!this._sketchStatusBar) {
+            return false;
+        }
+        if (!this._sketchStatusBarListener) {
+            this._sketchStatusBarListener = this._settings.sketch.emitter.event(() => this.updateSketchStatusBar());
+        }
         return this.updateSketchStatusBar();
     }
 
@@ -349,13 +364,10 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
     }
 
     /**
-     * Shows the current sketch in the status bar, once showStatusBar() has
-     * enabled it, and hides the item while no sketch is set.
+     * Shows the current sketch in the status bar, and hides the item while
+     * no sketch is set. Called only once showStatusBar() has enabled it.
      */
     private updateSketchStatusBar() {
-        if (!this._sketchStatusBarEnabled || !this._sketchStatusBar) {
-            return false;
-        }
         if (!this._settings.sketch.value) {
             this._sketchStatusBar.hide();
             return false;
