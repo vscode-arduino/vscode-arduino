@@ -12,6 +12,7 @@ import { DeviceContext } from "../deviceContext";
 import {
     ArduinoGccParser,
     IArduinoGccResult,
+    removeFlagDependentDefines,
 } from "./compilerCommandParser";
 import { VscodeSettings } from "./vscodeSettings";
 
@@ -131,6 +132,10 @@ export function makeCompilerParserContext(dc: DeviceContext): ICoCoPaContext {
         if (mmdIndex !== -1) {
             result.options.splice(mmdIndex, 1);
         }
+
+        // The compiler's built-in defines were queried without the sketch's
+        // flags; let IntelliSense derive the ones that depend on them.
+        result.defines = removeFlagDependentDefines(result.defines);
 
         // Add USB Connected macro to defines.
         result.defines.push("USBCON");
