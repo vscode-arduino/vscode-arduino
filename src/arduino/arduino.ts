@@ -673,7 +673,10 @@ export class ArduinoApp {
             args.push("--config-file", path.join(ArduinoWorkspace.rootPath, "arduino-cli.yaml"));
         }
 
-        if (dc.buildPreferences) {
+        // "arduino-cli upload" does not compile and rejects --build-property;
+        // the build preferences were applied when the binaries were built.
+        const compiles = buildMode !== BuildMode.CliUpload && buildMode !== BuildMode.CliUploadProgrammer;
+        if (dc.buildPreferences && compiles) {
             for (const pref of dc.buildPreferences) {
                 // Note: BuildPrefSetting makes sure that each preference
                 // value consists of exactly two items (key and value).
