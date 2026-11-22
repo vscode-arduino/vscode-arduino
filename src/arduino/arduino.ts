@@ -114,6 +114,11 @@ export class ArduinoApp {
             dc.onChangeBoard(requestAnalysis);
             dc.onChangeConfiguration(requestAnalysis);
             dc.onChangeSketch(requestAnalysis);
+            vscode.workspace.onDidChangeConfiguration((event) => {
+                if (event.affectsConfiguration("arduino.additionalLibraryFolders")) {
+                    requestAnalysis();
+                }
+            });
         }
     }
 
@@ -673,9 +678,21 @@ export class ArduinoApp {
             args.push("--config-file", path.join(ArduinoWorkspace.rootPath, "arduino-cli.yaml"));
         }
 
-        // "arduino-cli upload" does not compile and rejects --build-property;
-        // the build preferences were applied when the binaries were built.
+        // "arduino-cli upload" does not compile and rejects --libraries and
+        // --build-property; every other CLI mode compiles.
         const compiles = buildMode !== BuildMode.CliUpload && buildMode !== BuildMode.CliUploadProgrammer;
+        if (this.useArduinoCli() && compiles) {
+            for (const folder of VscodeSettings.getInstance().additionalLibraryFolders) {
+                const libraryFolder = path.resolve(ArduinoWorkspace.rootPath, folder);
+                if (util.directoryExistsSync(libraryFolder)) {
+                    args.push("--libraries", libraryFolder);
+                } else {
+                    arduinoChannel.warning(`arduino.additionalLibraryFolders: skipping ${libraryFolder}, which is not a folder`);
+                }
+            }
+        }
+
+        // The build preferences were applied when the binaries were built.
         if (dc.buildPreferences && compiles) {
             for (const pref of dc.buildPreferences) {
                 // Note: BuildPrefSetting makes sure that each preference
