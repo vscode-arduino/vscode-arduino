@@ -13,6 +13,7 @@ import * as util from "../common/util";
 import * as logger from "../logger/logger";
 
 import { DeviceContext } from "../deviceContext";
+import { AnalysisStatusBar } from "./analysisStatusBar";
 import { IArduinoSettings } from "./arduinoSettings";
 import { BoardManager } from "./boardManager";
 import { ExampleManager } from "./exampleManager";
@@ -70,6 +71,12 @@ export class ArduinoApp {
      * If so any call to this.build() will return false immediately.
      */
     private _building: boolean = false;
+
+    /**
+     * Reports analysis runs, which don't reveal the output with
+     * arduino.analyzingSketchFocusOutput off.
+     */
+    private _analysisStatusBar = new AnalysisStatusBar();
 
     /**
      * @param {IArduinoSettings} _settings ArduinoSetting object.
@@ -180,7 +187,9 @@ export class ArduinoApp {
      * All build modes except for BuildMode.Analyze run interactively, i.e. if
      * something is missing, it tries to query the user for the missing piece
      * of information (sketch, board, etc.). Analyze runs non interactively and
-     * just returns false.
+     * just returns false. It reveals the output only with
+     * arduino.analyzingSketchFocusOutput on; its progress and failures are
+     * shown in the status bar either way.
      * @param buildDir Override the build directory set by the project settings
      * with the given directory.
      * @returns true on success, false if
@@ -195,14 +204,19 @@ export class ArduinoApp {
         }
 
         this._building = true;
+        if (buildMode === BuildMode.Analyze) {
+            this._analysisStatusBar.hide();
+        }
 
         return await this._build(buildMode, buildDir)
         .then((ret) => {
             this._building = false;
+            this._analysisStatusBar.finish(ret);
             return ret;
         })
         .catch((reason) => {
             this._building = false;
+            this._analysisStatusBar.finish(false);
             logger.notifyUserError("ArduinoApp.build",
                                    reason,
                                    `Unhandled exception when cleaning up build "${buildMode}": ${JSON.stringify(reason)}`);
@@ -696,8 +710,15 @@ export class ArduinoApp {
         await vscode.workspace.saveAll(false);
 
         // we prepare the channel here since all following code will
-        // or at leas can possibly output to it
-        arduinoChannel.show();
+        // or at leas can possibly output to it. An analysis runs on its own
+        // (e.g. whenever the sketch changes), so it reveals the output only
+        // when the user asked for that and reports in the status bar.
+        if (buildMode === BuildMode.Analyze) {
+            this._analysisStatusBar.start(dc.sketch);
+        }
+        if (buildMode !== BuildMode.Analyze || VscodeSettings.getInstance().analyzingSketchFocusOutput) {
+            arduinoChannel.show();
+        }
         if (VscodeSettings.getInstance().clearOutputOnBuild) {
             arduinoChannel.clear();
         }

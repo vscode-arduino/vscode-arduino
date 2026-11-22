@@ -10,6 +10,7 @@ const configKeys = {
     ADDITIONAL_URLS: "arduino.additionalUrls",
     LOG_LEVEL: "arduino.logLevel",
     CLEAR_OUTPUT_ON_START: "arduino.clearOutputOnBuild",
+    ANALYZING_SKETCH_FOCUS_OUTPUT: "arduino.analyzingSketchFocusOutput",
     AUTO_UPDATE_INDEX_FILES: "arduino.autoUpdateIndexFiles",
     ALLOW_PDE_FILETYPE: "arduino.allowPDEFiletype",
     ENABLE_USB_DETECTION: "arduino.enableUSBDetection",
@@ -29,6 +30,7 @@ export interface IVscodeSettings {
     additionalUrls: string[];
     logLevel: string;
     clearOutputOnBuild: boolean;
+    analyzingSketchFocusOutput: boolean;
     allowPDEFiletype: boolean;
     enableUSBDetection: boolean;
     disableTestingOpen: boolean;
@@ -95,6 +97,10 @@ export class VscodeSettings implements IVscodeSettings {
 
     public get clearOutputOnBuild(): boolean {
         return this.getConfigValue<boolean>(configKeys.CLEAR_OUTPUT_ON_START);
+    }
+
+    public get analyzingSketchFocusOutput(): boolean {
+        return this.getConfigValue<boolean>(configKeys.ANALYZING_SKETCH_FOCUS_OUTPUT);
     }
 
     public get allowPDEFiletype(): boolean {
