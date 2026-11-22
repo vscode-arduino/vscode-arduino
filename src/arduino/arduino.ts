@@ -114,6 +114,9 @@ export class ArduinoApp {
             dc.onChangeBoard(requestAnalysis);
             dc.onChangeConfiguration(requestAnalysis);
             dc.onChangeSketch(requestAnalysis);
+            // Build preferences go into every compile, so they can change
+            // the flags IntelliSense needs (e.g. -std=gnu++17).
+            dc.onChangeBuildPreferences(requestAnalysis);
         }
     }
 
