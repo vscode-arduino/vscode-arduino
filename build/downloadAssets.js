@@ -5,15 +5,23 @@
 // from GitHub releases. The release is specified by the "version" field in
 // assets.json.
 
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const { createHash } = require("crypto");
 const { readFileSync, mkdirSync, rmSync, renameSync, existsSync } = require("fs");
 const { resolve } = require("path");
 
-function run(command) {
-  console.log(command);
-  execSync(command);
+// Without a shell, so that paths with spaces stay single arguments.
+function run(program, args) {
+  console.log([program, ...args].join(" "));
+  execFileSync(program, args);
 }
+
+// On Windows, use the system's bsdtar: it extracts .zip files, while a GNU tar
+// that comes first in PATH (Git for Windows, MSYS2) neither extracts them nor
+// accepts a "C:\..." archive path.
+const tar = process.platform === "win32"
+  ? resolve(process.env.SystemRoot || "C:\\Windows", "System32", "tar.exe")
+  : "tar";
 
 const config = require('./assets.json');
 
@@ -29,15 +37,14 @@ for (const asset in config.assets) {
       if (!existsSync(extractDirectory)) {
 
         // Download the asset.
-        run([
-          "curl",
+        run("curl", [
           `https://github.com/arduino/arduino-cli/releases/download/${config.version}/${asset}`,
           "--location",
-          `--output-dir ${directory}`,
-          `--remote-name`,
+          "--output-dir", directory,
+          "--remote-name",
           "--silent",
           "--show-error",
-        ].join(" "));
+        ]);
 
         // Verify the hash.
         const actualHash = createHash("sha256")
@@ -54,9 +61,9 @@ for (const asset in config.assets) {
         mkdirSync(extractDirectory, { recursive: true });
         // tar on Linux doesn't understand zip files.
         if (asset.endsWith(".zip") && process.platform === 'linux') {
-          run(`unzip ${destination} -d ${extractDirectory}`);
+          run("unzip", [destination, "-d", extractDirectory]);
         } else {
-          run(`tar -xf ${destination} -C ${extractDirectory}`);
+          run(tar, ["-xf", destination, "-C", extractDirectory]);
         }
 
         // Remove the downloaded archive. We don't need to ship it.
