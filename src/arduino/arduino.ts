@@ -729,7 +729,7 @@ export class ArduinoApp {
 
             // the first choice of the path should be from the users explicit settings.
             if (dc.output) {
-                buildDir = path.resolve(ArduinoWorkspace.rootPath, dc.output);
+                buildDir = path.resolve(ArduinoWorkspace.rootPath, dc.resolvedOutput);
             } else {
                 buildDir = path.resolve(ArduinoWorkspace.rootPath, buildDir);
             }

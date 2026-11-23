@@ -185,10 +185,11 @@ export async function activate(context: vscode.ExtensionContext) {
             path.relative(ArduinoWorkspace.rootPath, sketchbookPath + "/hardware/**"),
             path.relative(ArduinoWorkspace.rootPath, sketchbookPath + "/libraries/**")];
 
-        // If an output path is specified, it should be excluded as well
-        if (deviceContext.output) {
+        // If an output path is specified, it should be excluded as well (all
+        // sketches' build folders when it contains ${sketchName})
+        if (deviceContext.outputBase) {
             const outputPath = path.relative(ArduinoWorkspace.rootPath,
-                path.resolve(ArduinoWorkspace.rootPath, deviceContext.output));
+                path.resolve(ArduinoWorkspace.rootPath, deviceContext.outputBase));
             excludePatterns.push(`${outputPath}/**`);
         }
         const excludePattern = `{${excludePatterns.map((p) => p.replace("\\", "/")).join(",")}}`;
