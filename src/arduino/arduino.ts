@@ -744,8 +744,11 @@ export class ArduinoApp {
             }
 
             if (this.useArduinoCli()) {
-                args.push("--build-path", buildDir);
-
+                // "arduino-cli upload" (without compile) of older versions,
+                // the bundled 0.31 among them, rejects --build-path; all
+                // versions take the folder with the binaries as --input-dir.
+                const uploadOnly = buildMode === BuildMode.CliUpload || buildMode === BuildMode.CliUploadProgrammer;
+                args.push(uploadOnly ? "--input-dir" : "--build-path", buildDir);
             } else {
                 args.push("--pref", `build.path=${buildDir}`);
             }
