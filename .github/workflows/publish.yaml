@@ -17,6 +17,7 @@ jobs:
     with:
       BUILD_FLAGS: ${{ case(github.event_name == 'release', '', '--pre-release') }}
       os: '["ubuntu-latest"]'
+      add_build_number: github.event_name != 'release'
 
   publish:
     permissions: 
@@ -44,7 +45,7 @@ jobs:
 
       - name: publish pre-release
         if: ${{ github.event_name != 'release' }}
-        run: npx @vscode/vsce publish patch --oidc --pre-release --packagePath ./out/vsix/*
+        run: npx @vscode/vsce publish --oidc --pre-release --packagePath ./out/vsix/*
       
 
 

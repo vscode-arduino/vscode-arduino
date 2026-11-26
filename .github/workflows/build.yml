@@ -21,6 +21,11 @@ on:
         type: string
         default: '["ubuntu-latest", "macos-latest", "windows-latest"]'
         required: false
+      add_build_number:
+        description: adds the build number as the patch version
+        type: boolean
+        default: false
+        required: false
 
 
 jobs:
@@ -58,6 +63,11 @@ jobs:
 
       - name: Install project dependencies
         run: npm install
+      
+      - name: Set version build number
+        if: ${{ inputs.add_build_number }}
+        run: |
+          node build/updateVersion.js ${{ github.run_number }}
 
       - name: Check for linting errors
         run: npm exec -- gulp tslint
