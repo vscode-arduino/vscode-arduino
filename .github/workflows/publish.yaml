@@ -11,8 +11,8 @@ on:
       - main
 
 env:
-  BUILD_FLAGS: ${{ case(env.GITHUB_EVENT_NAME == 'release', '', '--pre-release') }}
-  is_release: ${{ env.GITHUB_EVENT_NAME == 'release' }}
+  BUILD_FLAGS: ${{ case(github.event_name == 'release', '', '--pre-release') }}
+  is_release: ${{ github.event_name == 'release' }}
 
 jobs:
   call-build:
