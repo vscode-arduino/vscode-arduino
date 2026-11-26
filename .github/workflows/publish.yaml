@@ -10,15 +10,12 @@ on:
     branches:
       - main
 
-env:
-  BUILD_FLAGS: ${{ case(github.event_name == 'release', '', '--pre-release') }}
-  is_release: ${{ github.event_name == 'release' }}
 
 jobs:
   call-build:
     uses: ./.github/workflows/build.yml
     with:
-      BUILD_FLAGS: ${{ env.BUILD_FLAGS }}
+      BUILD_FLAGS: ${{ case(github.event_name == 'release', '', '--pre-release') }}
       os: '["ubuntu-latest"]'
 
   publish:
@@ -39,11 +36,11 @@ jobs:
         run: npm install @vscode/vsce
 
       - name: publish extension
-        if: ${{ env.is_release}}
+        if: ${{ github.event_name == 'release' }}
         run: npx @vscode/vsce publish --oidc --packagePath ./out/vsix/*
 
       - name: publish pre-release
-        if: ${{ !env.is_release}}
+        if: ${{ github.event_name != 'release' }}
         run: npx @vscode/vsce publish --oidc --pre-release --packagePath ./out/vsix/* patch
       
 
