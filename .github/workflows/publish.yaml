@@ -1,0 +1,76 @@
+name: Publish extension 
+
+on:
+  release:
+   types: [published]
+  push:
+    branches:
+      - main
+
+
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/build.yml
+    with:
+      BUILD_FLAGS: ${{ case(github.event_name == 'release', '', '--pre-release') }}
+      os: '["ubuntu-latest"]'
+      add_build_number: ${{ github.event_name != 'release' }}
+    permissions:
+      contents: read
+
+  publish:
+    permissions: 
+      actions: write
+      packages: write
+      contents: write
+      statuses: read
+      id-token: write
+    needs: call-build
+    runs-on: ubuntu-latest
+    steps:       
+      - name: Checkout
+        uses: actions/checkout@v6
+        
+      - name: download-artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: VS Code extension VSIXes (ubuntu-latest)
+          path: ${{ github.workspace }}/out/vsix/
+
+      - name: Use Node 24.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+
+      - name: install vsce
+        run: npm i --global @vscode/vsce
+
+      - name: upload artifacts to release
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.ref_name }} ./out/vsix/*
+      
+      - name: upload artifacts to dev pre release
+        if: ${{ github.event_name != 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          export COMMIT_SHA=`git log -1 --format=%H`
+          gh release edit --prerelease --target $COMMIT_SHA latest_dev 
+          gh release upload latest_dev ./out/vsix/* --clobber
+
+      - name: publish extension
+        if: ${{ github.event_name == 'release' }}
+        run: npx @vscode/vsce publish --oidc --packagePath ./out/vsix/*
+
+      - name: publish pre-release
+        if: ${{ github.event_name != 'release' }}
+        run: npx @vscode/vsce publish --oidc --pre-release --packagePath ./out/vsix/*
+
+      
+
+
+
+
