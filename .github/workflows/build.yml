@@ -1,4 +1,4 @@
-name: CI
+name: Build CI
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJson(inputs.os) }}
+        os: ${{ fromJson(case(inputs.os == '', '["ubuntu-latest", "macos-latest", "windows-latest"]', inputs.os)) }}
 
     steps:
       - name: Checkout
