@@ -1,0 +1,52 @@
+name: Publish pre-release extension 
+
+on:
+  release:
+   types: [published]
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  BUILD_FLAGS: ${{ case(env.GITHUB_EVENT_NAME == 'release', '', '--pre-release') }}
+  is_release: ${{ env.GITHUB_EVENT_NAME == 'release' }}
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/build.yml
+    with:
+      BUILD_FLAGS: ${{ env.BUILD_FLAGS }}
+      os: '["ubuntu-latest"]'
+
+  publish:
+    needs: call-build
+    runs-on: ubuntu-latest
+    steps:       
+      - name: download-artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: VS Code extension VSIXes (ubuntu-latest)
+
+      - name: Use Node 24.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+
+      - name: install vsce
+        run: npm install @vscode/vsce
+
+      - name: publish extension
+        if: ${{ env.is_release}}
+        run: npx @vscode/vsce publish --oidc --packagePath ./out/vsix/*
+
+      - name: publish pre-release
+        if: ${{ !env.is_release}}
+        run: npx @vscode/vsce publish --oidc --pre-release --packagePath ./out/vsix/* patch
+      
+
+
+
+
