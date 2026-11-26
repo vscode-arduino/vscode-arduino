@@ -44,7 +44,7 @@ jobs:
 
       - name: publish pre-release
         if: ${{ github.event_name != 'release' }}
-        run: npx @vscode/vsce publish --oidc --pre-release --packagePath ./out/vsix/* patch
+        run: npx @vscode/vsce publish patch --oidc --pre-release --packagePath ./out/vsix/*
       
 
 
