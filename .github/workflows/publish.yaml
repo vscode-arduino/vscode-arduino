@@ -11,6 +11,7 @@ on:
       - main
 
 
+
 jobs:
   call-build:
     uses: ./.github/workflows/build.yml
@@ -18,9 +19,15 @@ jobs:
       BUILD_FLAGS: ${{ case(github.event_name == 'release', '', '--pre-release') }}
       os: '["ubuntu-latest"]'
       add_build_number: ${{ github.event_name != 'release' }}
+    permissions:
+      contents: read
 
   publish:
     permissions: 
+      actions: write
+      packages: write
+      contents: write
+      statuses: read
       id-token: write
     needs: call-build
     runs-on: ubuntu-latest
