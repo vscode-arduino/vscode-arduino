@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 import { getSerialMonitorApi, LineEnding, Parity, Port, PortInformation, SerialMonitorApi, StopBits, Version } from "@microsoft/vscode-serial-monitor-api";
 import * as vscode from "vscode";
+import { VscodeSettings } from "../arduino/vscodeSettings";
 import * as constants from "../common/constants";
 import { DeviceContext } from "../deviceContext";
 import * as Logger from "../logger/logger";
@@ -60,7 +61,13 @@ export class SerialMonitor implements vscode.Disposable {
             this.updatePortListStatus();
         });
 
-        this.serialMonitorApi = await getSerialMonitorApi(Version.latest, extensionContext);
+        try {
+            this.serialMonitorApi = await getSerialMonitorApi(Version.latest, extensionContext);
+        } catch {
+            // The API is supplied by the Serial Monitor extension, which may be
+            // unavailable in tests or if the dependency failed to activate.
+            this.serialMonitorApi = undefined;
+        }
 
         this.checkForUndefinedSerialMonitorApi();
     }
@@ -71,6 +78,9 @@ export class SerialMonitor implements vscode.Disposable {
 
     public async selectSerialPort(): Promise<string | undefined> {
         this.checkForUndefinedSerialMonitorApi(true);
+        if (!this.serialMonitorApi) {
+            return undefined;
+        }
 
         const ports = await this.serialMonitorApi.listAvailablePorts();
         if (!ports.length) {
@@ -118,6 +128,9 @@ export class SerialMonitor implements vscode.Disposable {
 
     public async openSerialMonitor(restore: boolean = false): Promise<void> {
         this.checkForUndefinedSerialMonitorApi(true);
+        if (!this.serialMonitorApi) {
+            return;
+        }
 
         if (!this.currentPort) {
             const ans = await vscode.window.showInformationMessage("No serial port was selected, please select a serial port first", "Select", "Cancel");
@@ -132,7 +145,17 @@ export class SerialMonitor implements vscode.Disposable {
         }
 
         // if we're restoring, we want to use the most recent baud rate selected, rather than popping UI.
-        const baudRate = restore ? this.lastSelectedBaudRate : await this.selectBaudRate() ?? this.lastSelectedBaudRate;
+        // arduino.defaultSerialMonitorBaudRate, when set, replaces the UI too.
+        let baudRate = this.lastSelectedBaudRate;
+        if (!restore) {
+            const defaultBaudRate = VscodeSettings.getInstance().defaultSerialMonitorBaudRate;
+            if (defaultBaudRate !== undefined) {
+                baudRate = defaultBaudRate;
+                this.lastSelectedBaudRate = defaultBaudRate;
+            } else {
+                baudRate = await this.selectBaudRate() ?? this.lastSelectedBaudRate;
+            }
+        }
 
         try {
             this.activePort = await this.serialMonitorApi.startMonitoringPort({
@@ -158,6 +181,9 @@ export class SerialMonitor implements vscode.Disposable {
 
     public async closeSerialMonitor(port?: string): Promise<boolean> {
         this.checkForUndefinedSerialMonitorApi(true);
+        if (!this.serialMonitorApi) {
+            return false;
+        }
 
         const portToClose = port ?? this.currentPort;
         let closed = false;
@@ -170,7 +196,7 @@ export class SerialMonitor implements vscode.Disposable {
     }
 
     public dispose() {
-        this.serialMonitorApi.dispose();
+        this.serialMonitorApi?.dispose();
     }
 
     private checkForUndefinedSerialMonitorApi(showError: boolean = false): void {

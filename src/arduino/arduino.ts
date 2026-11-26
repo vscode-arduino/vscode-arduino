@@ -15,10 +15,12 @@ import * as logger from "../logger/logger";
 import { DeviceContext } from "../deviceContext";
 import { IArduinoSettings } from "./arduinoSettings";
 import { BoardManager } from "./boardManager";
+import { readSketchCompileCommand } from "./compilerCommandParser";
 import { ExampleManager } from "./exampleManager";
 import { AnalysisManager,
          isCompilerParserEnabled,
-         makeCompilerParserContext } from "./intellisense";
+         makeCompilerParserContext,
+         normalizeCompilerLine } from "./intellisense";
 import { LibraryManager } from "./libraryManager";
 import { VscodeSettings } from "./vscodeSettings";
 
@@ -113,6 +115,11 @@ export class ArduinoApp {
             dc.onChangeBoard(requestAnalysis);
             dc.onChangeConfiguration(requestAnalysis);
             dc.onChangeSketch(requestAnalysis);
+            vscode.workspace.onDidChangeConfiguration((event) => {
+                if (event.affectsConfiguration("arduino.additionalLibraryFolders")) {
+                    requestAnalysis();
+                }
+            });
         }
     }
 
@@ -174,7 +181,10 @@ export class ArduinoApp {
      *  * BuildMode.UploadProgrammer: Compile and upload using the user
      *     selectable programmer
      *  * BuildMode.Analyze: Compile, analyze the output and generate
-     *     IntelliSense configuration from it.
+     *     IntelliSense configuration from it. With the Arduino CLI and a
+     *     build directory, only the compilation database is written and the
+     *     sketch's compile command is taken from it, which skips compiling
+     *     and linking.
      *  * BuildMode.Verify: Just compile.
      * All build modes except for BuildMode.Analyze run interactively, i.e. if
      * something is missing, it tries to query the user for the missing piece
@@ -668,7 +678,26 @@ export class ArduinoApp {
             }
         }
 
-        if (dc.buildPreferences) {
+        if (this.useArduinoCli() && this._settings.useLocalArduinoCliConfigFile) {
+            args.push("--config-file", path.join(ArduinoWorkspace.rootPath, "arduino-cli.yaml"));
+        }
+
+        // "arduino-cli upload" does not compile and rejects --libraries and
+        // --build-property; every other CLI mode compiles.
+        const compiles = buildMode !== BuildMode.CliUpload && buildMode !== BuildMode.CliUploadProgrammer;
+        if (this.useArduinoCli() && compiles) {
+            for (const folder of VscodeSettings.getInstance().additionalLibraryFolders) {
+                const libraryFolder = path.resolve(ArduinoWorkspace.rootPath, folder);
+                if (util.directoryExistsSync(libraryFolder)) {
+                    args.push("--libraries", libraryFolder);
+                } else {
+                    arduinoChannel.warning(`arduino.additionalLibraryFolders: skipping ${libraryFolder}, which is not a folder`);
+                }
+            }
+        }
+
+        // The build preferences were applied when the binaries were built.
+        if (dc.buildPreferences && compiles) {
             for (const pref of dc.buildPreferences) {
                 // Note: BuildPrefSetting makes sure that each preference
                 // value consists of exactly two items (key and value).
@@ -704,7 +733,7 @@ export class ArduinoApp {
 
             // the first choice of the path should be from the users explicit settings.
             if (dc.output) {
-                buildDir = path.resolve(ArduinoWorkspace.rootPath, dc.output);
+                buildDir = path.resolve(ArduinoWorkspace.rootPath, dc.resolvedOutput);
             } else {
                 buildDir = path.resolve(ArduinoWorkspace.rootPath, buildDir);
             }
@@ -715,8 +744,11 @@ export class ArduinoApp {
             }
 
             if (this.useArduinoCli()) {
-                args.push("--build-path", buildDir);
-
+                // "arduino-cli upload" (without compile) of older versions,
+                // the bundled 0.31 among them, rejects --build-path; all
+                // versions take the folder with the binaries as --input-dir.
+                const uploadOnly = buildMode === BuildMode.CliUpload || buildMode === BuildMode.CliUploadProgrammer;
+                args.push(uploadOnly ? "--input-dir" : "--build-path", buildDir);
             } else {
                 args.push("--pref", `build.path=${buildDir}`);
             }
@@ -725,6 +757,14 @@ export class ArduinoApp {
         } else {
             const msg = "Output path is not specified. Unable to reuse previously compiled files. Build will be slower. See README.";
             arduinoChannel.warning(msg);
+        }
+
+        // An analysis only needs the sketch's compile command: with the
+        // Arduino CLI and a known build directory, have it write the
+        // compilation database instead of compiling and linking the sketch.
+        const compilationDatabaseOnly = buildMode === BuildMode.Analyze && this.useArduinoCli() && !!buildDir;
+        if (compilationDatabaseOnly) {
+            args.push("--only-compilation-database");
         }
 
         // Environment variables passed to pre- and post-build commands
@@ -762,12 +802,27 @@ export class ArduinoApp {
         // Push sketch as last argument
         args.push(path.join(ArduinoWorkspace.rootPath, dc.sketch));
 
-        const cocopa = makeCompilerParserContext(dc);
+        // With --only-compilation-database, Arduino CLI runs the core's
+        // prebuild hooks but skips its postbuild hooks. The ESP32 cores use
+        // that pair to put -DARDUINO_CORE_BUILD into a response file
+        // (file_opts) only while the core compiles, so after such a run the
+        // file still holds it and would leak into the sketch's defines.
+        const cocopa = makeCompilerParserContext(dc, compilationDatabaseOnly ? ["ARDUINO_CORE_BUILD"] : []);
 
         const cleanup = async (result: "ok" | "error") => {
             let ret = true;
             if (result === "ok") {
                 ret = await this.runPrePostBuildCommand(dc, env, "post");
+            }
+            if (compilationDatabaseOnly && result === "ok" && cocopa.callback) {
+                // Nothing was compiled, so the output has no compile command
+                // to parse: take the sketch's one from the database.
+                const command = readSketchCompileCommand(buildDir, dc.sketch);
+                if (command) {
+                    cocopa.callback(normalizeCompilerLine(command));
+                } else {
+                    arduinoChannel.warning(`No compile command for the sketch in ${path.join(buildDir, "compile_commands.json")}.`);
+                }
             }
             await cocopa.conclude();
             if (buildMode === BuildMode.Upload || buildMode === BuildMode.UploadProgrammer) {
@@ -802,7 +857,7 @@ export class ArduinoApp {
 
         const stdoutcb = wrapLineCallback((line: string) => {
             if (cocopa.callback) {
-                cocopa.callback(line);
+                cocopa.callback(normalizeCompilerLine(line));
             }
             if (verbose) {
                 arduinoChannel.channel.append(line);

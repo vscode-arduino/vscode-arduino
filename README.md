@@ -32,6 +32,16 @@ the repository's [release page](https://github.com/arduino/arduino-cli/releases/
 For custom versions, `arduino.path` must be set to the directory containing the
 Arduino CLI executable.
 
+When Arduino CLI is enabled, the extension asks the selected CLI to report its
+effective `directories.data` and `directories.user` settings. The Board Manager
+uses the reported data directory, and the Library Manager looks for manually
+installed libraries in `<directories.user>/libraries`. CLI environment
+overrides such as `ARDUINO_DIRECTORIES_DATA` are therefore honored as well. If
+`arduino.useLocalArduinoCliConfigFile` is enabled, the workspace's
+`arduino-cli.yaml` is used when querying these directories, matching build
+commands. If the CLI cannot report its configuration, the extension falls back
+to its platform defaults (including portable and Windows Store handling).
+
 ### Legacy Arduino IDE
 Use of the legacy Arduino IDE is not recommended, and support for the legacy
 Arduino IDE will be removed in a future version of the extension. The legacy
@@ -87,13 +97,16 @@ This extension provides several commands in the Command Palette (<kbd>F1</kbd> o
 | `arduino.additionalUrls` | Additional Boards Manager URLs for 3rd party packages as a string array. The default value is empty. |
 | `arduino.logLevel` | CLI output log level. Could be info or verbose. The default value is `"info"`. |
 | `arduino.clearOutputOnBuild` | Clear the output logs before uploading or verifying. Default value is `false`. |
+| `arduino.additionalLibraryFolders` | Folders of libraries to compile against besides the sketchbook's `libraries` folder, as a string array; as in that folder, each subfolder of one is a library. Relative paths are resolved against the workspace folder. They are passed to `arduino-cli compile` as `--libraries` on every verify, upload and IntelliSense analysis (Arduino CLI only); a folder that does not exist is skipped with a warning, and a change to the setting triggers a new analysis. The default value is empty. |
 | `arduino.allowPDEFiletype` | Allow the VSCode Arduino extension to open .pde files from pre-1.0.0 versions of Arduino. Note that this will break Processing code. Default value is `false`. | 
 | `arduino.enableUSBDetection` | Enable/disable USB detection from the VSCode Arduino extension. The default value is `true`. When your device is plugged in to your computer, it will pop up a message "`Detected board ****, Would you like to switch to this board type`". After clicking the `Yes` button, it will automatically detect which serial port (COM) is connected a USB device. If your device does not support this feature, please provide us with the PID/VID of your device; the code format is defined in `misc/usbmapping.json`.To learn more about how to list the vid/pid, use the following tools: https://github.com/EmergingTechnologyAdvisors/node-serialport `npm install -g serialport` `serialport-list -f jsonline`|
 | `arduino.disableTestingOpen` | Enable/disable automatic sending of a test message to the serial port for checking the open status. The default value is `false` (a test message will be sent). |
+| `arduino.defaultSerialMonitorBaudRate` | The baud rate the serial monitor opens with. "Arduino: Open Serial Monitor" uses it instead of asking for a baud rate; set it to `null` to be asked every time. The default value is `115200`. |
 | `arduino.skipHeaderProvider` | Enable/disable the extension providing completion items for headers. This functionality is included in newer versions of the C++ extension. The default value is `false`.|
 | `arduino.disableIntelliSenseAutoGen` | When `true` vscode-arduino will not auto-generate an IntelliSense configuration (i.e. `.vscode/c_cpp_properties.json`) by analyzing Arduino's compiler output. |
 | `arduino.analyzeOnOpen` | When true, automatically run analysis when the project is opened. Only works when `arduino.analyzeOnSettingChange` is true. |
 | `arduino.analyzeOnSettingChange` | When true, automatically run analysis when board, configuration, or sketch settings are changed. |
+| `arduino.followActiveEditorSketch` | When true, the sketch of the file in the active editor becomes the current sketch (`sketch` in `.vscode/arduino.json`). A file belongs to the nearest folder above it that contains a `<folder name>.ino`, so a sketch's other `.ino`, `.h` and `.cpp` files count too. Sketches in the sketchbook's `hardware` and `libraries` folders and in the output folder are skipped, as in "Arduino: Select Sketch". Useful for a workspace folder with many sketches, such as a sketchbook. The default value is `false`. |
 
 The following Visual Studio Code settings are available for the Arduino extension. These can be set in global user preferences <kbd>Ctrl</kbd> + <kbd>,</kbd> *or* <kbd>Cmd</kbd> + <kbd>,</kbd> or workspace settings (`.vscode/settings.json`). The latter overrides the former.
 
@@ -129,14 +142,14 @@ The following settings are as per sketch settings of the Arduino extension. You 
 - `sketch` - The main sketch file name of Arduino.
 - `port` - Name of the serial port connected to the device. Can be set by the `Arduino: Select Serial Port` command. For Mac users could be "/dev/cu.wchusbserial1420".
 - `board` - Currently selected Arduino board alias. Can be set by the `Arduino: Change Board Type` command. Also, you can find the board list there.
-- `output` - Arduino build output path. If not set, Arduino will create a new temporary output folder each time, which means it cannot reuse the intermediate result of the previous build leading to long verify/upload time, so it is recommended to set the field. Arduino requires that the output path should not be the workspace itself or in a subfolder of the workspace, otherwise, it may not work correctly. By default, this option is not set. It's worth noting that the contents of this file could be deleted during the build process, so pick (or create) a directory that will not store files you want to keep.
+- `output` - Arduino build output path. If not set, Arduino will create a new temporary output folder each time, which means it cannot reuse the intermediate result of the previous build leading to long verify/upload time, so it is recommended to set the field. Arduino requires that the output path should not be the workspace itself or in a subfolder of the workspace, otherwise, it may not work correctly. By default, this option is not set. It's worth noting that the contents of this file could be deleted during the build process, so pick (or create) a directory that will not store files you want to keep. `${sketchName}` in the path is replaced by the name of the sketch file without its extension, e.g. `"output": "../build/${sketchName}"`: in a workspace with several sketches each one then keeps its own build folder, while one shared folder is emptied by the Arduino CLI each time a different sketch is built.
 - `prebuild` - External command which will be invoked before any sketch build (verify, upload, ...). For details see the [Pre- and Post-Build Commands](#Pre--and-Post-Build-Commands) section.
 - `postbuild` - External command to be run after the sketch has been built successfully. See the afore mentioned section for more details.
 - `intelliSenseGen` - Override the global setting for auto-generation of the IntelliSense configuration (i.e. `.vscode/c_cpp_properties.json`). Three options are available:
   - `"global"`: Use the global settings (default)
   - `"disable"`: Disable the auto-generation even if globally enabled
   - `"enable"`: Enable the auto-generation even if globally disabled
-- `buildPreferences` - Set Arduino preferences which then are used during any build (verify, upload, ...). This allows for extra defines, compiler options or includes. The preference key-value pairs must be set as follows:
+- `buildPreferences` - Set Arduino preferences which then are used during any build (verify, upload, ...). "Arduino CLI: Upload" and "Arduino CLI: Upload Using Programmer" only upload binaries that are already built, so they don't pass them. This allows for extra defines, compiler options or includes. The preference key-value pairs must be set as follows:
 ```json
     "buildPreferences": [
         ["build.extra_flags", "-DMY_DEFINE=666 -DANOTHER_DEFINE=3.14 -Wall"],
@@ -183,7 +196,7 @@ Loading configuration...
 when verifying.
 
 ## IntelliSense
-vscode-arduino auto-configures IntelliSense by default. vscode-arduino analyzes Arduino's compiler output by running a separate build and generates the corresponding configuration file at `.vscode/c_cpp_properties.json`. vscode-arduino tries as hard as possible to keep things up to date, e.g. it runs the analysis when switching the board or the sketch.
+vscode-arduino auto-configures IntelliSense by default. vscode-arduino analyzes Arduino's compiler output by running a separate build and generates the corresponding configuration file at `.vscode/c_cpp_properties.json`. With the Arduino CLI and an `output` folder set in `arduino.json`, that build only writes the compilation database (`compile_commands.json`) instead of compiling and linking the sketch, and the analysis reads the sketch's compile command from it. vscode-arduino tries as hard as possible to keep things up to date, e.g. it runs the analysis when switching the board or the sketch.
 
 It doesn't makes sense though to run the analysis repeatedly. Therefore if the workspace reports problems ("squiggles") - for instance after adding new includes from a new library - run the analysis manually:
 
@@ -218,14 +231,13 @@ You can find the full list of issues on the [Issue Tracker](https://github.com/v
 Installation prerequisites:
 
 - [Git](https://git-scm.com/)
-- [Node.js](https://nodejs.org/) (>= 12.x)
-- [Npm](https://www.npmjs.com/) (>= 6.x)
+- [Node.js](https://nodejs.org/) (24.x LTS)
+- [Npm](https://www.npmjs.com/) (bundled with Node.js)
 
 To *run and develop*, do the following:
 - `git clone https://github.com/vscode-arduino/vscode-arduino`
 - `cd vscode-arduino`
 - Run `npm i`
-- Run `npm i -g gulp`
 - Open in Visual Studio Code (`code .`)
 - Press <kbd>F5</kbd> to debug.
 

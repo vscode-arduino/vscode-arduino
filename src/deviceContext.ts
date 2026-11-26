@@ -87,6 +87,19 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
 
     private _sketchStatusBar: vscode.StatusBarItem;
 
+    /**
+     * Keeps the sketch status bar item in sync with the sketch setting.
+     * Registered only while the item is enabled by showStatusBar() and the
+     * status bar is visible ("workbench.statusBar.visible").
+     */
+    private _sketchStatusBarListener: vscode.Disposable;
+
+    /**
+     * Registers and unregisters _sketchStatusBarListener when the status bar
+     * is shown or hidden. Registered by showStatusBar().
+     */
+    private _statusBarVisibilityListener: vscode.Disposable;
+
     private _prebuild: string;
 
     private _programmer: string;
@@ -118,6 +131,12 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
         }
         if (this._vscodeWatcher) {
             this._vscodeWatcher.dispose();
+        }
+        if (this._sketchStatusBarListener) {
+            this._sketchStatusBarListener.dispose();
+        }
+        if (this._statusBarVisibilityListener) {
+            this._statusBarVisibilityListener.dispose();
         }
     }
 
@@ -166,12 +185,23 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
             });
     }
 
+    /**
+     * Enables the sketch status bar item. From then on, while the status bar
+     * is visible, it follows the sketch setting, also when the sketch changes
+     * by other means than "Select Sketch", e.g. when arduino.json is edited.
+     */
     public showStatusBar() {
-        if (!this._settings.sketch.value) {
+        if (!this._sketchStatusBar) {
             return false;
         }
-        this._sketchStatusBar.text = this._settings.sketch.value;
-        this._sketchStatusBar.show();
+        if (!this._statusBarVisibilityListener) {
+            this._statusBarVisibilityListener = vscode.workspace.onDidChangeConfiguration((event) => {
+                if (event.affectsConfiguration("workbench.statusBar.visible")) {
+                    this.updateSketchStatusBarListener();
+                }
+            });
+        }
+        return this.updateSketchStatusBarListener();
     }
 
     public get onChangePort() { return this._settings.port.emitter.event }
@@ -226,6 +256,29 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
     public set output(value: string) {
         this._settings.output.value = value;
         this.saveContext();
+    }
+
+    /**
+     * The output path with `${sketchName}` replaced by the name of the
+     * sketch file without its extension, so that each sketch can have a
+     * build folder of its own. Undefined when no output path is set.
+     */
+    public get resolvedOutput(): string | undefined {
+        if (!this.output) {
+            return undefined;
+        }
+        const sketchName = this.sketch ? path.basename(this.sketch, path.extname(this.sketch)) : "";
+        return this.output.replace(/\$\{sketchName\}/g, sketchName);
+    }
+
+    /**
+     * The part of the output path that is the same for all sketches: up to
+     * its first variable. Undefined when no output path is set, or when it
+     * starts with a variable.
+     */
+    public get outputBase(): string | undefined {
+        const base = this.output ? this.output.split("${")[0].replace(/[\\/]+$/, "") : "";
+        return base || undefined;
     }
 
     public get intelliSenseGen() {
@@ -339,10 +392,44 @@ export class DeviceContext implements IDeviceContext, vscode.Disposable {
     }
 
     private saveContext() {
-        if (!ArduinoWorkspace.rootPath) {
+        if (this._suppressSaveContext || !ArduinoWorkspace.rootPath) {
             return;
         }
         const deviceConfigFile = path.join(ArduinoWorkspace.rootPath, ARDUINO_CONFIG_FILE);
         this._settings.save(deviceConfigFile);
+    }
+
+    /**
+     * Follows the sketch setting only while the status bar is visible: while
+     * it is hidden, the sketch listener is unregistered, and once it is shown
+     * again, the listener is registered and the item brought up to date.
+     */
+    private updateSketchStatusBarListener() {
+        const statusBarVisible = vscode.workspace.getConfiguration("workbench.statusBar").get<boolean>("visible", true);
+        if (!statusBarVisible) {
+            if (this._sketchStatusBarListener) {
+                this._sketchStatusBarListener.dispose();
+                this._sketchStatusBarListener = undefined;
+            }
+            return false;
+        }
+        if (!this._sketchStatusBarListener) {
+            this._sketchStatusBarListener = this._settings.sketch.emitter.event(() => this.updateSketchStatusBar());
+        }
+        return this.updateSketchStatusBar();
+    }
+
+    /**
+     * Shows the current sketch in the status bar, and hides the item while
+     * no sketch is set. Called only once showStatusBar() has enabled it.
+     */
+    private updateSketchStatusBar() {
+        if (!this._settings.sketch.value) {
+            this._sketchStatusBar.hide();
+            return false;
+        }
+        this._sketchStatusBar.text = this._settings.sketch.value;
+        this._sketchStatusBar.show();
+        return true;
     }
 }

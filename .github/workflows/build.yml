@@ -11,5 +11,53 @@ on:
 
 jobs:
   build:
-    uses: ./.github/workflows/build-template.yml
-  
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Node.js 24 is the current LTS and is used for building and packaging.
+      - name: Use Node 24.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+
+      # On new macos-latest machines, Python 3.9+ is used, and it's causing issues with binding.gyp
+      - name: Use Python 3.8
+        if: ${{ matrix.os == 'macos-latest' }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: 3.8
+
+      - name: Linux test dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-multilib build-essential libudev-dev
+
+      - name: Install project dependencies
+        run: npm install
+
+      - name: Check for linting errors
+        run: npm exec -- gulp tslint
+      - name: Build and pack extension
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: node build/package.js
+      - name: Build and pack extension (windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: node build/package.js
+      - name: Publish extension VSIX as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VS Code extension VSIXes (${{ matrix.os }})
+          path: out/vsix
+
+      - name: Run tests
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: npm test --silent

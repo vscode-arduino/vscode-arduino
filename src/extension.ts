@@ -185,10 +185,11 @@ export async function activate(context: vscode.ExtensionContext) {
             path.relative(ArduinoWorkspace.rootPath, sketchbookPath + "/hardware/**"),
             path.relative(ArduinoWorkspace.rootPath, sketchbookPath + "/libraries/**")];
 
-        // If an output path is specified, it should be excluded as well
-        if (deviceContext.output) {
+        // If an output path is specified, it should be excluded as well (all
+        // sketches' build folders when it contains ${sketchName})
+        if (deviceContext.outputBase) {
             const outputPath = path.relative(ArduinoWorkspace.rootPath,
-                path.resolve(ArduinoWorkspace.rootPath, deviceContext.output));
+                path.resolve(ArduinoWorkspace.rootPath, deviceContext.outputBase));
             excludePatterns.push(`${outputPath}/**`);
         }
         const excludePattern = `{${excludePatterns.map((p) => p.replace("\\", "/")).join(",")}}`;
@@ -305,6 +306,41 @@ export async function activate(context: vscode.ExtensionContext) {
     const completionProvider = new completionProviderModule.CompletionProvider();
     context.subscriptions.push(vscode.languages.registerCompletionItemProvider(ARDUINO_MODE, completionProvider, "<", '"', "."));
 
+    // Makes the sketch of the file in the editor the current sketch, if
+    // arduino.followActiveEditorSketch is on.
+    const followActiveEditorSketch = (editor: vscode.TextEditor | undefined) => {
+        if (!editor || editor.document.uri.scheme !== "file" || !ArduinoWorkspace.rootPath ||
+            !vscodeSettings.followActiveEditorSketch || !arduinoContextModule.default.initialized) {
+            return;
+        }
+        const rootPath = ArduinoWorkspace.rootPath;
+        const sketchFile = util.findSketchForFile(rootPath, editor.document.uri.fsPath);
+        if (!sketchFile) {
+            return;
+        }
+        // Skip the same folders as "Arduino: Select Sketch"
+        const sketchbookPath = arduinoContextModule.default.arduinoApp.settings.sketchbookPath;
+        const excludedFolders = sketchbookPath
+            ? [path.join(sketchbookPath, "hardware"), path.join(sketchbookPath, "libraries")]
+            : [];
+        if (deviceContext.output) {
+            excludedFolders.push(path.resolve(rootPath, deviceContext.output));
+        }
+        if (excludedFolders.some((folder) => util.isPathInside(folder, sketchFile))) {
+            return;
+        }
+        const sketch = path.relative(rootPath, sketchFile);
+        const current = deviceContext.sketch ? path.normalize(deviceContext.sketch) : undefined;
+        const sameSketch = process.platform === "win32"
+            ? current?.toLowerCase() === sketch.toLowerCase()
+            : current === sketch;
+        if (sameSketch) {
+            return;
+        }
+        deviceContext.sketch = sketch;
+        deviceContext.showStatusBar();
+    };
+
     if (ArduinoWorkspace.rootPath && (
         util.fileExistsSync(path.join(ArduinoWorkspace.rootPath, ARDUINO_CONFIG_FILE))
         || (openEditor && openEditor.document.fileName.endsWith(".ino")))) {
@@ -317,6 +353,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 SerialMonitor.getInstance().initialize(context);
             }
             vscode.commands.executeCommand("setContext", "vscode-arduino-community:showExampleExplorer", true);
+            followActiveEditorSketch(vscode.window.activeTextEditor);
         })();
     }
     vscode.window.onDidChangeActiveTextEditor(async () => {
@@ -333,6 +370,7 @@ export async function activate(context: vscode.ExtensionContext) {
             }
             vscode.commands.executeCommand("setContext", "vscode-arduino-community:showExampleExplorer", true);
         }
+        followActiveEditorSketch(activeEditor);
     });
 
     const allowPDEFiletype = vscodeSettings.allowPDEFiletype;

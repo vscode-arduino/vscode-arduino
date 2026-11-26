@@ -3,7 +3,16 @@ const eslint = require("gulp-eslint");
 const tslint = require("gulp-tslint");
 const PluginError = require("plugin-error");
 const log = require("fancy-log");
-const ts = require("gulp-typescript");
+// source-map@0.7 selects its browser loader when Node exposes global fetch.
+// Load gulp-typescript without fetch so source-map uses its Node filesystem loader.
+const originalFetch = globalThis.fetch;
+let ts;
+try {
+    globalThis.fetch = undefined;
+    ts = require("gulp-typescript");
+} finally {
+    globalThis.fetch = originalFetch;
+}
 const sourcemaps = require("gulp-sourcemaps");
 const webpack = require("webpack");
 const del = require("del");
@@ -97,14 +106,14 @@ gulp.task("test", (done) => {
     }
     function restoreExtensionDependencies() {
         const packageJson = JSON.parse(fs.readFileSync("package.json"));
-        packageJson.extensionDependencies = ["ms-vscode.cpptools"];
+        packageJson.extensionDependencies = ["ms-vscode.cpptools", "ms-vscode.vscode-serial-monitor"];
         fs.writeFileSync("package.json", JSON.stringify(packageJson, null, 2) + "\n");
     }
 
     // When using cli command "npm test" to exec test, the depended extensions (cpptools) are not available so that
     // the extension cannot be activated. As a workaround, remove extensionDependencies from package.json before
     // running test and restore extensionDependencies after test exited.
-    removeExtensionDependencies();
+     removeExtensionDependencies();
 
     const child = childProcess.spawn("node", ["./out/test/runTest"], {
         cwd: __dirname,

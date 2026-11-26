@@ -27,17 +27,15 @@ jobs:
       zipSources: false
     condition: ne(variables['Build.Reason'], 'PullRequest')
   - task: NodeTool@0
-    displayName: Use Node 18.x
+    displayName: Use Node 24.x
     inputs:
-      versionSpec: 18.x
+      versionSpec: 24.x
   - task: UsePythonVersion@0
     displayName: Use Python 3.8
     inputs:
       versionSpec: 3.8
   - ${{ if parameters.prerelease }}:
     - pwsh: node -e "p=require('./package.json');p.version=p.version.replace(/\.\d+$/,'.'+$(Build.BuildNumber));require('fs').writeFileSync('./package.json',JSON.stringify(p,undefined,2))"
-  - script: npm install --global gulp node-gyp @vscode/vsce
-    displayName: Install global dependencies
   - script: npm install
     displayName: Install project dependencies
   - task: ComponentGovernanceComponentDetection@0
@@ -47,19 +45,17 @@ jobs:
     inputs:
       outputfile: $(Build.SourcesDirectory)/NOTICE.txt
     condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-  - script: gulp tslint
+  - script: npx --no-install gulp tslint
     displayName: Check for linting errors
-  - script: gulp genAikey
+  - script: npx --no-install gulp genAikey
     displayName: Use production AI key
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
   - ${{ if parameters.prerelease }}:
     - pwsh: |
-        $env:NODE_OPTIONS="--no-experimental-fetch --openssl-legacy-provider"
         node build/package.js --pre-release
       displayName: Build and pack extension
   - ${{ else }}:
     - pwsh: |
-        $env:NODE_OPTIONS="--no-experimental-fetch --openssl-legacy-provider"
         node build/package.js
       displayName: Build and pack extension
   - pwsh: |
@@ -96,17 +92,17 @@ jobs:
       msbuildArguments: /p:SignType=$(SignType)
     condition: ne(variables['Build.Reason'], 'PullRequest')
   - script: curl -LO https://downloads.arduino.cc/arduino-1.8.19-windows.zip
-    displayName: Download Arduino IDE
+    displayName: Download Arduino IDE 1
   - script: >-
       node build/checkHash.js arduino-1.8.19-windows.zip c704a821089eab2588f1deae775916219b1517febd1dd574ff29958dca873945
-    displayName: Verify Arduino IDE
+    displayName: Verify Arduino IDE 1
   - task: ExtractFiles@1
-    displayName: Extract Arduino IDE
+    displayName: Extract Arduino IDE 1
     inputs:
       archiveFilePatterns: arduino-1.8.19-windows.zip
       destinationFolder: arduino-ide
   - script: "echo ##vso[task.prependpath]$(Build.SourcesDirectory)\\arduino-ide\\arduino-1.8.19"
-    displayName: Add Arduino IDE to PATH
+    displayName: Add Arduino IDE 1 to PATH
   - script: npm test --silent
     displayName: Run tests
   - task: DeleteFiles@1

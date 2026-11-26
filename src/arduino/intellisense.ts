@@ -9,11 +9,47 @@ import * as constants from "../common/constants";
 import { arduinoChannel } from "../common/outputChannel";
 import { ArduinoWorkspace } from "../common/workspace";
 import { DeviceContext } from "../deviceContext";
+import {
+    ArduinoGccParser,
+    IArduinoGccResult,
+    removeFlagDependentDefines,
+} from "./compilerCommandParser";
 import { VscodeSettings } from "./vscodeSettings";
 
 export interface ICoCoPaContext {
     callback: (s: string) => void;
     conclude: () => Promise<void>;
+}
+
+/**
+ * Normalizes a compiler command line for correct parsing by cocopa.
+ *
+ * Some GCC options use a separate argument format (e.g. "--param VALUE")
+ * which cocopa's shlex.split() incorrectly splits into two separate tokens.
+ * This function converts such options to the joined format ("--param=VALUE").
+ *
+ * @param line The compiler command line to normalize
+ * @returns The normalized command line
+ *
+ * @example
+ * // "--param max-inline-insns-single=500" → "--param=max-inline-insns-single=500"
+ */
+export function normalizeCompilerLine(line: string): string {
+    // List of GCC options that take a separate argument
+    // Add more patterns here if needed in the future
+    const patterns: Array<[RegExp, string]> = [
+        // --param NAME=VALUE → --param=NAME=VALUE
+        [/--param\s+(\S+)/g, "--param=$1"],
+        // Add more normalizations here as needed:
+        // [/-include\s+(\S+)/g, "-include=$1"],
+        // [/-isystem\s+(\S+)/g, "-isystem=$1"],
+    ];
+
+    let result = line;
+    for (const [pattern, replacement] of patterns) {
+        result = result.replace(pattern, replacement);
+    }
+    return result;
 }
 
 /**
@@ -40,6 +76,8 @@ export function isCompilerParserEnabled(dc?: DeviceContext) {
  * and keeps the calling context more readable.
  *
  * @param dc The device context of the caller.
+ * @param removeDefines Macro names to leave out of the configuration's
+ * defines.
  *
  * Possible enhancements:
  *
@@ -47,7 +85,7 @@ export function isCompilerParserEnabled(dc?: DeviceContext) {
  *     as at least for the forcedIncludes IntelliSense seems to take the
  *     order into account.
  */
-export function makeCompilerParserContext(dc: DeviceContext): ICoCoPaContext {
+export function makeCompilerParserContext(dc: DeviceContext, removeDefines: string[] = []): ICoCoPaContext {
 
     // TODO: callback for local setting: when IG gen is re-enabled file
     //   analysis trigger. Perhaps for global possible as well?
@@ -70,39 +108,57 @@ export function makeCompilerParserContext(dc: DeviceContext): ICoCoPaContext {
             return;
         }
 
+        const result = runner.result as IArduinoGccResult;
+
         // Normalize compiler and include paths (resolve ".." and ".")
-        runner.result.normalize();
+        result.normalize();
         // Remove invalid paths
-        await runner.result.cleanup();
+        await result.cleanup();
 
         // Search for Arduino.h in the include paths - we need it for a
         // forced include - users expect Arduino symbols to be available
         // in main sketch without having to include the header explicitly
-        const ardHeader = await runner.result.findFile("Arduino.h");
-        const forcedIncludes = ardHeader.length > 0
-            ? ardHeader
-            : undefined;
-        if (!forcedIncludes) {
+        const ardHeader = await result.findFile("Arduino.h");
+        if (!ardHeader.length) {
             arduinoChannel.warning("Unable to locate \"Arduino.h\" within IntelliSense include paths.");
         }
 
-        // The C++ standard is set to the following default value if no compiler flag has been found.
-        const content = new ccp.CCppPropertiesContentResult(runner.result,
+        const forcedIncludes = Array.from(new Set([
+            ...(result.forcedIncludes || []),
+            ...ardHeader,
+        ]));
+
+        // Prevent null.d from being created in the workspace directory on
+        // macOS and Linux while retaining all other compiler arguments.
+        const mmdIndex = result.options.findIndex((element) => element === "-MMD");
+        if (mmdIndex !== -1) {
+            result.options.splice(mmdIndex, 1);
+        }
+
+        // The compiler's built-in defines were queried without the sketch's
+        // flags; let IntelliSense derive the ones that depend on them.
+        result.defines = removeFlagDependentDefines(result.defines);
+        if (removeDefines.length) {
+            result.defines = result.defines.filter((define) =>
+                removeDefines.indexOf(define.split("=")[0]) === -1);
+        }
+
+        // Add USB Connected macro to defines.
+        result.defines.push("USBCON");
+
+        // The C++ standard is set to the following default value if no
+        // compiler flag has been found.
+        const content = new ccp.CCppPropertiesContentResult(result,
                                                             constants.C_CPP_PROPERTIES_CONFIG_NAME,
                                                             ccp.CCppPropertiesISMode.Gcc_X64,
                                                             ccp.CCppPropertiesCStandard.C11,
                                                             ccp.CCppPropertiesCppStandard.Cpp11,
-                                                            forcedIncludes);
-
-        // The following 4 lines are added to prevent null.d from being created in the workspace
-        // directory on MacOS and Linux. This is may be a bug in intelliSense
-        const mmdIndex = runner.result.options.findIndex((element) => element === "-MMD");
-        if (mmdIndex) {
-            runner.result.options.splice(mmdIndex);
+                                                            forcedIncludes.length
+                                                                ? forcedIncludes
+                                                                : undefined);
+        if (result.effectiveCppStandard) {
+            content.configurations[0].cppStandard = result.effectiveCppStandard;
         }
-
-        // Add USB Connected marco to defines
-        runner.result.defines.push("USBCON")
 
         try {
 
@@ -141,7 +197,10 @@ export function makeCompilerParserContext(dc: DeviceContext): ICoCoPaContext {
 function makeCompilerParserEngines(dc: DeviceContext) {
     const sketch = path.basename(dc.sketch);
     const trigger = ccp.getTriggerForArduinoGcc(sketch);
-    const gccParserEngine = new ccp.ParserGcc(trigger);
+    const gccParserEngine = new ArduinoGccParser(
+        trigger,
+        ArduinoWorkspace.rootPath || process.cwd(),
+    );
     return [gccParserEngine];
 }
 

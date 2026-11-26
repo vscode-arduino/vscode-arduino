@@ -54,10 +54,10 @@ extends:
         - download: current
           artifact: extension-vsixes
         - task: NodeTool@0
-          displayName: Use Node 18.x
+          displayName: Use Node 24.x
           inputs:
-            versionSpec: 18.x
-        - script: npm install --global @vscode/vsce
+            versionSpec: 24.x
+        - script: npm install --global @vscode/vsce@2.32.0
           displayName: Install vsce
         - script: for f in $(Pipeline.Workspace)/extension-vsixes/*.vsix; do vsce publish --packagePath $f; done
           displayName: Publish vscode-arduino

@@ -10,16 +10,20 @@ const configKeys = {
     ADDITIONAL_URLS: "arduino.additionalUrls",
     LOG_LEVEL: "arduino.logLevel",
     CLEAR_OUTPUT_ON_START: "arduino.clearOutputOnBuild",
+    ADDITIONAL_LIBRARY_FOLDERS: "arduino.additionalLibraryFolders",
     AUTO_UPDATE_INDEX_FILES: "arduino.autoUpdateIndexFiles",
     ALLOW_PDE_FILETYPE: "arduino.allowPDEFiletype",
     ENABLE_USB_DETECTION: "arduino.enableUSBDetection",
     DISABLE_TESTING_OPEN: "arduino.disableTestingOpen",
+    DEFAULT_SERIAL_MONITOR_BAUD_RATE: "arduino.defaultSerialMonitorBaudRate",
     IGNORE_BOARDS: "arduino.ignoreBoards",
     SKIP_HEADER_PROVIDER: "arduino.skipHeaderProvider",
     USE_ARDUINO_CLI: "arduino.useArduinoCli",
+    USE_LOCAL_ARDUINO_CLI_CONFIG_FILE: "arduino.useLocalArduinoCliConfigFile",
     DISABLE_INTELLISENSE_AUTO_GEN: "arduino.disableIntelliSenseAutoGen",
     ANALYZE_ON_OPEN: "arduino.analyzeOnOpen",
     ANALYZE_ON_SETTING_CHANGE: "arduino.analyzeOnSettingChange",
+    FOLLOW_ACTIVE_EDITOR_SKETCH: "arduino.followActiveEditorSketch",
 };
 
 export interface IVscodeSettings {
@@ -28,15 +32,19 @@ export interface IVscodeSettings {
     additionalUrls: string[];
     logLevel: string;
     clearOutputOnBuild: boolean;
+    additionalLibraryFolders: string[];
     allowPDEFiletype: boolean;
     enableUSBDetection: boolean;
     disableTestingOpen: boolean;
+    defaultSerialMonitorBaudRate: number | undefined;
     ignoreBoards: string[];
     skipHeaderProvider: boolean;
     useArduinoCli: boolean;
+    useLocalArduinoCliConfigFile: boolean;
     disableIntelliSenseAutoGen: boolean;
     analyzeOnOpen: boolean;
     analyzeOnSettingChange: boolean;
+    followActiveEditorSketch: boolean;
     updateAdditionalUrls(urls: string[]): void;
     setUseArduinoCli(value: boolean): Promise<void>;
     setArduinoPath(value: string): Promise<void>;
@@ -95,6 +103,10 @@ export class VscodeSettings implements IVscodeSettings {
         return this.getConfigValue<boolean>(configKeys.CLEAR_OUTPUT_ON_START);
     }
 
+    public get additionalLibraryFolders(): string[] {
+        return this.getConfigValue<string[]>(configKeys.ADDITIONAL_LIBRARY_FOLDERS) || [];
+    }
+
     public get allowPDEFiletype(): boolean {
         return this.getConfigValue<boolean>(configKeys.ALLOW_PDE_FILETYPE);
     }
@@ -105,6 +117,12 @@ export class VscodeSettings implements IVscodeSettings {
 
     public get disableTestingOpen(): boolean {
         return this.getConfigValue<boolean>(configKeys.DISABLE_TESTING_OPEN);
+    }
+
+    /** The configured serial monitor baud rate, or undefined when unset (null) or not a positive integer. */
+    public get defaultSerialMonitorBaudRate(): number | undefined {
+        const value = this.getConfigValue<number | null>(configKeys.DEFAULT_SERIAL_MONITOR_BAUD_RATE);
+        return Number.isInteger(value) && value > 0 ? value : undefined;
     }
 
     public get ignoreBoards(): string[] {
@@ -123,6 +141,14 @@ export class VscodeSettings implements IVscodeSettings {
         return this.setConfigValue(configKeys.USE_ARDUINO_CLI, value, true);
     }
 
+    public get useLocalArduinoCliConfigFile(): boolean {
+        return this.getConfigValue(configKeys.USE_LOCAL_ARDUINO_CLI_CONFIG_FILE);
+    }
+
+    public setUseLocalArduinoCliConfigFile(value: boolean): Promise<void> {
+        return this.setConfigValue(configKeys.USE_LOCAL_ARDUINO_CLI_CONFIG_FILE, value, true);
+    }
+
     public get skipHeaderProvider(): boolean {
         return this.getConfigValue<boolean>(configKeys.SKIP_HEADER_PROVIDER);
     }
@@ -137,6 +163,10 @@ export class VscodeSettings implements IVscodeSettings {
 
     public get analyzeOnSettingChange(): boolean {
         return this.getConfigValue<boolean>(configKeys.ANALYZE_ON_SETTING_CHANGE);
+    }
+
+    public get followActiveEditorSketch(): boolean {
+        return this.getConfigValue<boolean>(configKeys.FOLLOW_ACTIVE_EDITOR_SKETCH);
     }
 
     public async updateAdditionalUrls(value) {
