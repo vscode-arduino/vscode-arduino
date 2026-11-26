@@ -26,6 +26,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: VS Code extension VSIXes (ubuntu-latest)
+          path: ${{ github.workspace }}/out/vsix/
 
       - name: Use Node 24.x
         uses: actions/setup-node@v7
