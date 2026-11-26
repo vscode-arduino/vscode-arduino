@@ -32,6 +32,9 @@ jobs:
     needs: call-build
     runs-on: ubuntu-latest
     steps:       
+      - name: Checkout
+        uses: actions/checkout@v6
+        
       - name: download-artifacts
         uses: actions/download-artifact@v4
         with:
@@ -45,14 +48,6 @@ jobs:
 
       - name: install vsce
         run: npm install @vscode/vsce
-
-      - name: publish extension
-        if: ${{ github.event_name == 'release' }}
-        run: npx @vscode/vsce publish --oidc --packagePath ./out/vsix/*
-
-      - name: publish pre-release
-        if: ${{ github.event_name != 'release' }}
-        run: npx @vscode/vsce publish --oidc --pre-release --packagePath ./out/vsix/*
 
       - name: upload artifacts to release
         if: ${{ github.event_name == 'release' }}
@@ -68,6 +63,16 @@ jobs:
           export COMMIT_SHA=`git log -1 --format=%H`
           gh release edit --prerelease --target $COMMIT_SHA latest_dev 
           gh release upload latest_dev ./out/vsix/* --clobber
+
+      - name: publish extension
+        if: ${{ github.event_name == 'release' }}
+        run: npx @vscode/vsce publish --oidc --packagePath ./out/vsix/*
+
+      - name: publish pre-release
+        if: ${{ github.event_name != 'release' }}
+        run: npx @vscode/vsce publish --oidc --pre-release --packagePath ./out/vsix/*
+
+      
 
 
 
