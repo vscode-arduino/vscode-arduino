@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 import { getSerialMonitorApi, LineEnding, Parity, Port, PortInformation, SerialMonitorApi, StopBits, Version } from "@microsoft/vscode-serial-monitor-api";
 import * as vscode from "vscode";
+import { VscodeSettings } from "../arduino/vscodeSettings";
 import * as constants from "../common/constants";
 import { DeviceContext } from "../deviceContext";
 import * as Logger from "../logger/logger";
@@ -144,7 +145,17 @@ export class SerialMonitor implements vscode.Disposable {
         }
 
         // if we're restoring, we want to use the most recent baud rate selected, rather than popping UI.
-        const baudRate = restore ? this.lastSelectedBaudRate : await this.selectBaudRate() ?? this.lastSelectedBaudRate;
+        // arduino.defaultSerialMonitorBaudRate, when set, replaces the UI too.
+        let baudRate = this.lastSelectedBaudRate;
+        if (!restore) {
+            const defaultBaudRate = VscodeSettings.getInstance().defaultSerialMonitorBaudRate;
+            if (defaultBaudRate !== undefined) {
+                baudRate = defaultBaudRate;
+                this.lastSelectedBaudRate = defaultBaudRate;
+            } else {
+                baudRate = await this.selectBaudRate() ?? this.lastSelectedBaudRate;
+            }
+        }
 
         try {
             this.activePort = await this.serialMonitorApi.startMonitoringPort({
