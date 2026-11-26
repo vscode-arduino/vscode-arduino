@@ -47,7 +47,7 @@ jobs:
           node-version: 24.x
 
       - name: install vsce
-        run: npm install @vscode/vsce
+        run: npm ci
 
       - name: upload artifacts to release
         if: ${{ github.event_name == 'release' }}
