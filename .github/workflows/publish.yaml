@@ -46,7 +46,21 @@ jobs:
       - name: publish pre-release
         if: ${{ github.event_name != 'release' }}
         run: npx @vscode/vsce publish --oidc --pre-release --packagePath ./out/vsix/*
+
+      - name: upload artifacts to release
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.ref_name }} ./out/vsix/*
       
+      - name: upload artifacts to dev pre release
+        if: ${{ github.event_name != 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          export COMMIT_SHA=`git log -1 --format=%H`
+          gh release edit --prerelease --target $COMMIT_SHA latest_dev 
+          gh release upload latest_dev ./out/vsix/* --clobber
 
 
 
