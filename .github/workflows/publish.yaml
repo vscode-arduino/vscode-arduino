@@ -1,22 +1,27 @@
 name: Publish extension 
 
 on:
+  release:
+   types: [published]
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
       - main
-  workflow_dispatch:
+
+env:
+  BUILD_FLAGS: ${{ case(env.GITHUB_EVENT_NAME == 'release', '', '--pre-release') }}
+  is_release: ${{ env.GITHUB_EVENT_NAME == 'release' }}
 
 jobs:
   call-build:
     uses: ./.github/workflows/build.yml
     with:
-      BUILD_FLAGS: '--pre-release'
+      BUILD_FLAGS: ${{ env.BUILD_FLAGS }}
       os: '["ubuntu-latest"]'
 
-  upload:
+  publish:
     needs: call-build
     runs-on: ubuntu-latest
     steps:       
@@ -31,19 +36,16 @@ jobs:
           node-version: 24.x
 
       - name: install vsce
-        run: npm install --global vsce
-
-      - name: sainity checl
-        run: echo ${{ secrets.VSCE_PASSWORD }} | sha256sum
-
-      - name: vsce login
-        run: echo ${{ secrets.VSCE_PASSWORD }} | vsce login ${{ secrets.VSCE_USER }}
+        run: npm install @vscode/vsce
 
       - name: publish extension
-        run: vsce publish --oidc --pre-release  --packagePath ./out/vsix/*
+        if: ${{ env.is_release}}
+        run: npx @vscode/vsce publish --oidc --packagePath ./out/vsix/*
+
+      - name: publish pre-release
+        if: ${{ !env.is_release}}
+        run: npx @vscode/vsce publish --oidc --pre-release --packagePath ./out/vsix/* patch
       
-      - name: vsce logout
-        run: vsce logout
 
 
 
