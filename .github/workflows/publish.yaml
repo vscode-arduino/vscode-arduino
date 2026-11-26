@@ -19,6 +19,8 @@ jobs:
       os: '["ubuntu-latest"]'
 
   publish:
+    permissions: 
+      id-token: write
     needs: call-build
     runs-on: ubuntu-latest
     steps:       
