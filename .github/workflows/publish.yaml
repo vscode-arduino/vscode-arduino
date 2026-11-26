@@ -47,7 +47,7 @@ jobs:
           node-version: 24.x
 
       - name: install vsce
-        run: npm ci
+        run: npm i --global-style --omit dev --omit optional --omit peer @vscode/vsce
 
       - name: upload artifacts to release
         if: ${{ github.event_name == 'release' }}
