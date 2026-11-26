@@ -195,7 +195,7 @@ Loading configuration...
 when verifying.
 
 ## IntelliSense
-vscode-arduino auto-configures IntelliSense by default. vscode-arduino analyzes Arduino's compiler output by running a separate build and generates the corresponding configuration file at `.vscode/c_cpp_properties.json`. vscode-arduino tries as hard as possible to keep things up to date, e.g. it runs the analysis when switching the board or the sketch.
+vscode-arduino auto-configures IntelliSense by default. vscode-arduino analyzes Arduino's compiler output by running a separate build and generates the corresponding configuration file at `.vscode/c_cpp_properties.json`. With the Arduino CLI and an `output` folder set in `arduino.json`, that build only writes the compilation database (`compile_commands.json`) instead of compiling and linking the sketch, and the analysis reads the sketch's compile command from it. vscode-arduino tries as hard as possible to keep things up to date, e.g. it runs the analysis when switching the board or the sketch.
 
 It doesn't makes sense though to run the analysis repeatedly. Therefore if the workspace reports problems ("squiggles") - for instance after adding new includes from a new library - run the analysis manually:
 
