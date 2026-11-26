@@ -17,7 +17,7 @@ jobs:
     with:
       BUILD_FLAGS: ${{ case(github.event_name == 'release', '', '--pre-release') }}
       os: '["ubuntu-latest"]'
-      add_build_number: github.event_name != 'release'
+      add_build_number: ${{ github.event_name != 'release' }}
 
   publish:
     permissions: 
